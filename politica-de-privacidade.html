@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Política de Privacidade — Caderno de Cuidado</title>
+<style>
+body{font-family:Segoe UI,Arial,sans-serif;max-width:800px;margin:40px auto;padding:0 20px;color:#222;line-height:1.6}
+h1{color:#174A3A}h2{color:#174A3A;margin-top:28px}p,li{font-size:16px}
+.footer{margin-top:40px;font-size:14px;color:#666;border-top:1px solid #ddd;padding-top:12px}
+</style>
+</head>
+<body>
+<h1>Política de Privacidade — Caderno de Cuidado</h1>
+<p><strong>Controlador:</strong> wavizo &nbsp;|&nbsp; <strong>Vigência:</strong> 06/10/2026 &nbsp;|&nbsp; <strong>Versão do app:</strong> 1.25.0</p>
+
+<h2>1. Resumo</h2>
+<p>O <strong>Caderno de Cuidado</strong> é uma agenda digital para acompanhamento de gestantes e bebês que funciona <strong>offline por padrão</strong>: sem login, todos os dados ficam <strong>somente no seu dispositivo</strong>. Opcionalmente, você pode <strong>entrar com sua conta Google</strong> para guardar uma cópia de segurança (backup) no <strong>seu próprio Google Drive</strong>. Nós (wavizo) <strong>não operamos servidores, não coletamos, não vendemos e não compartilhamos</strong> seus dados com terceiros.</p>
+
+<h2>2. Dados tratados (modo offline)</h2>
+<p>Os dados inseridos por você (cadastros de gestantes e bebês, consultas, eventos e equipe de saúde) são armazenados exclusivamente no armazenamento local do dispositivo (LocalStorage / pasta de dados do aplicativo em <code>%LocalAppData%\wavizo\CadernoDeCuidado</code>). Sem login, nada sai do aparelho.</p>
+
+<h2>3. Sincronização opcional com o Google Drive</h2>
+<p>Ao tocar em <strong>Entrar com Google</strong>, você autoriza o app a:</p>
+<ul>
+<li>identificar sua conta (nome e e-mail, via perfil Google) para exibir quem está conectado;</li>
+<li>criar e atualizar um arquivo de backup (<code>caderno-backup.json</code>) na <strong>pasta oculta do aplicativo</strong> dentro do <strong>seu</strong> Google Drive (área <code>appDataFolder</code>, visível apenas para este app).</li>
+</ul>
+<p>O backup contém a mesma informação já gravada no aparelho (cadastros, consultas, eventos e configurações). O token de acesso fica guardado <strong>somente no seu dispositivo</strong>, protegido pelo Windows (DPAPI, por usuário). Os dados enviados ao Drive passam a ser tratados também pelo Google, conforme a <a href="https://policies.google.com/privacy">Política de Privacidade do Google</a>.</p>
+<p>Você pode parar a sincronização a qualquer momento em <strong>Sair do Google</strong> (apaga o token do aparelho). A cópia já enviada permanece no seu Drive até que você a exclua em <a href="https://drive.google.com">drive.google.com</a>.</p>
+
+<h2>4. O que NÃO fazemos</h2>
+<ul>
+<li>Não exigimos conta para usar o app — o login Google é opcional e serve só ao backup;</li>
+<li>Não usamos rastreadores, analytics, anúncios ou SDKs de terceiros;</li>
+<li>Não acessamos localização, câmera, microfone ou contatos;</li>
+<li>Não operamos servidor (backend): fora o backup no <strong>seu próprio Drive</strong> (quando você ativa), nenhum dado é enviado a nós.</li>
+</ul>
+
+<h2>5. Exportação e backup local</h2>
+<p>O app oferece exportação em CSV/JSON. Ao exportar, o arquivo gerado fica sob sua guarda: proteja-o e compartilhe-o apenas pelos canais seguros da sua unidade de saúde, conforme a LGPD (Lei nº 13.709/2018).</p>
+
+<h2>6. Segurança</h2>
+<p>A proteção dos dados locais depende do acesso ao dispositivo (bloqueio de tela, criptografia do disco e permissões do Windows). A cópia no Drive fica protegida pela segurança da sua conta Google — recomendamos verificação em duas etapas.</p>
+
+<h2>7. Dados de menores</h2>
+<p>Dados de bebês são inseridos pelo profissional de saúde ou responsável, para fins de acompanhamento clínico. Sem login, eles nunca saem do aparelho; com a sincronização ativa, vão apenas para o seu próprio Google Drive. Em nenhum caso chegam até nós.</p>
+
+<h2>8. Seus direitos (LGPD)</h2>
+<p>Você exerce seus direitos diretamente: consulta, corrige e exclui os dados dentro do app; desinstalar o app pode remover os dados locais (exporte ou sincronize antes, se precisar); e pode revogar o acesso do app à sua conta Google a qualquer momento em <a href="https://myaccount.google.com/permissions">myaccount.google.com/permissions</a>.</p>
+
+<h2>9. Alterações nesta política</h2>
+<p>Se esta política mudar, a nova versão será publicada nesta mesma página com a data de vigência atualizada.</p>
+
+<h2>10. Contato</h2>
+<p>Dúvidas sobre privacidade: abra um chamado em <a href="https://github.com/wavizo-bot/Cadernodecuidado/issues">github.com/wavizo-bot/Cadernodecuidado/issues</a>.</p>
+
+<div class="footer">wavizo — Caderno de Cuidado · Política válida a partir de 06/10/2026</div>
+</body>
+</html>

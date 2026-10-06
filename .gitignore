@@ -1,0 +1,32 @@
+# Dados de pacientes / exportações do app — nunca versionar (LGPD)
+caderno-cuidado-*.json
+export*.json
+log.txt
+
+# Ambiente
+node_modules/
+dist/
+.DS_Store
+
+# Pacote gerado pelo PWABuilder (subir só no Partner Center)
+*.zip
+*.msix
+*.msixbundle
+*.pfx
+
+# Build MSIX local (contem certificado e segredo Google) + screenshots da loja
+MSIX/
+store-assets/
+
+# Na pasta icons, versionar apenas os referenciados pelo app/manifest
+icons/*
+!icons/apple-touch-icon.png
+!icons/icon-32.png
+!icons/icon-192.png
+!icons/icon-512.png
+!icons/maskable-512.png
+!icons/Square150x150Logo.png
+
+# Segredo OAuth Google (Desktop) - NAO versionar
+client_secret*.json
+google-client.json
