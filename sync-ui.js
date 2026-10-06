@@ -1,6 +1,7 @@
 /* Sincronizacao Caderno de Cuidado: botao unico + modal + Google Drive.
    Reusa os botoes originais de export/import (clicados de forma oculta).
-   Fala com o Launcher MSIX via window.chrome.webview.hostObjects.sync. */
+   Fala com o Launcher MSIX via window.chrome.webview.hostObjects.cadernoDrive.
+   (O nome "sync" e reservado pelo WebView2 e nao pode ser usado.) */
 (function () {
   'use strict';
   var REG_KEY = 'caderno-cuidado-registros-v1';
@@ -14,7 +15,7 @@
     try {
       return (window.chrome && window.chrome.webview &&
               window.chrome.webview.hostObjects &&
-              window.chrome.webview.hostObjects.sync) || null;
+              window.chrome.webview.hostObjects.cadernoDrive) || null;
     } catch (e) { return null; }
   }
   function snapshot() {
@@ -34,8 +35,8 @@
 
   var state = {
     signedIn: false, email: '', lastContactAt: 0,
-    lastHash: hash(snapshot()), blueUntil: 0, backupBusy: false,
-    lastChangeAt: 0, cur: 'idle', timer: null
+    lastHash: null, blueUntil: 0, backupBusy: false,
+    lastChangeAt: 0, cur: 'idle', timer: null, hostBroken: false
   };
   var m = meta();
   var btn = null, statusEl = null, overlay = null;
@@ -56,7 +57,9 @@
       state.blueUntil = now + BLUE_MS;
     }
     var mm = meta();
-    var dirty = h !== mm.lastSyncedHash;
+    var snap = snapshot();
+    // Base vazia (instalacao nova, sem nenhum dado): nada a perder => limpo
+    var dirty = !!(snap.reg || snap.cfg) && h !== mm.lastSyncedHash;
     var online = state.signedIn && (now - state.lastContactAt) < CONTACT_TTL;
     var s;
     if (now < state.blueUntil || state.backupBusy) s = 'saved';
@@ -125,47 +128,66 @@
     });
   }
 
+  // Chama o host object (C#) sem NUNCA lancar excecao: se o host falhar
+  // (ex. 0x80070490), marca hostBroken e o app segue com import/export local.
+  function callHost(name, arg) {
+    var h = host();
+    if (!h) return Promise.resolve({ ok: false, error: 'sem-host' });
+    var p;
+    try {
+      p = (arg === undefined) ? h[name]() : h[name](arg);
+    } catch (e) {
+      state.hostBroken = true;
+      return Promise.resolve({ ok: false, error: 'host-broken' });
+    }
+    return parseRes(p).then(function (r) {
+      if (r && (r.error === 'host-broken' || r.error === 'sem-host')) state.hostBroken = true;
+      return r;
+    }).catch(function () {
+      state.hostBroken = true;
+      return { ok: false, error: 'host-broken' };
+    });
+  }
+
   function refreshHostState() {
     var h = host();
-    if (!h) return Promise.resolve();
-    return parseRes(h.GetState()).then(function (st) {
+    if (!h || state.hostBroken) return Promise.resolve();
+    return callHost('GetState').then(function (st) {
+      if (!st || st.error) return;
       state.signedIn = !!st.signedIn;
       state.email = st.email || '';
       if (st.reachable) state.lastContactAt = Date.now();
       paint();
-    }).catch(function () {});
+    });
   }
 
   function doLogin() {
-    var h = host();
-    if (!h) return;
+    if (!host() || state.hostBroken) return;
     setBusy(true);
-    parseRes(h.Login()).then(function (r) {
+    callHost('Login').then(function (r) {
       setBusy(false);
       if (r.ok) {
         state.signedIn = true; state.email = r.email || '';
         state.lastContactAt = Date.now(); state.blueUntil = Date.now() + BLUE_MS;
-      } else {
+      } else if (r.error !== 'host-broken') {
         alert('Falha no login Google: ' + (r.error || 'desconhecido'));
       }
       paint();
     });
   }
   function doLogout() {
-    var h = host();
-    if (!h) return;
-    parseRes(h.Logout()).then(function () {
+    if (!host()) return;
+    callHost('Logout').then(function () {
       state.signedIn = false; state.email = ''; paint();
     });
   }
   function doBackup(auto) {
-    var h = host();
-    if (!h || state.backupBusy) return;
+    if (!host() || state.hostBroken || state.backupBusy) return;
     var snap = snapshot();
     if (!snap.reg && !snap.cfg) { if (!auto) alert('Nada para sincronizar.'); return; }
     state.backupBusy = true; paint();
     var payload = JSON.stringify({ v: 1, savedAt: new Date().toISOString(), reg: snap.reg, cfg: snap.cfg });
-    parseRes(h.Backup(payload)).then(function (r) {
+    callHost('Backup', payload).then(function (r) {
       state.backupBusy = false;
       if (r.ok) {
         var mm = meta();
@@ -181,11 +203,10 @@
     });
   }
   function doRestore() {
-    var h = host();
-    if (!h) return;
+    if (!host()) return;
     if (!confirm('Substituir os dados deste aparelho pelos dados do Google Drive?')) return;
     setBusy(true);
-    parseRes(h.Restore()).then(function (r) {
+    callHost('Restore').then(function (r) {
       setBusy(false);
       if (r.ok && r.payload) {
         var p = typeof r.payload === 'string' ? JSON.parse(r.payload) : r.payload;
@@ -213,10 +234,10 @@
 
   function openModal() {
     closeModal();
-    refreshHostState();
+    // Monta o modal ANTES de qualquer chamada ao host: o clique sempre responde.
+    var hasHost = !!host() && !state.hostBroken;
     overlay = document.createElement('div');
     overlay.id = 'cc-sync-overlay';
-    var hasHost = !!host();
     overlay.innerHTML =
       '<div id="cc-sync-modal" role="dialog" aria-label="Sincronizar">' +
         '<h2>Sincronizar dados</h2>' +
@@ -250,6 +271,7 @@
     if (bo) bo.onclick = function () { doLogout(); closeModal(); };
     var br = document.getElementById('cc-m-restore');
     if (br) br.onclick = doRestore;
+    refreshHostState(); // depois do modal montado: nunca bloqueia o clique
   }
   function closeModal() {
     if (overlay && overlay.parentNode) overlay.parentNode.removeChild(overlay);
@@ -281,8 +303,10 @@
 
   var tries = 0;
   var boot = setInterval(function () {
-    if (install() || ++tries > 60) clearInterval(boot);
-  }, 500);
+    try {
+      if (install() || ++tries > 60) clearInterval(boot);
+    } catch (e) { if (++tries > 60) clearInterval(boot); }
+  });
   // Reinstala se o React redesenhar o cabecalho
   var obs = new MutationObserver(function () {
     if (!document.getElementById('cc-sync-btn')) install();
