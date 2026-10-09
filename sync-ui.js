@@ -10,6 +10,8 @@
   var CONTACT_TTL = 15 * 60 * 1000;   // contato Drive vale por 15 min
   var BLUE_MS = 4000;                 // "acabou de salvar" dura 4 s
   var AUTOSYNC_DELAY = 12000;         // auto-backup 12 s apos alteracao
+  var POLL_MS = 60000;                // verifica a nuvem a cada 60 s
+  var IDLE_MS = 30000;                // recarrega sozinho se ocioso ha 30 s
 
   function host() {
     try {
@@ -36,7 +38,8 @@
   var state = {
     signedIn: false, email: '', lastContactAt: 0,
     lastHash: null, blueUntil: 0, backupBusy: false,
-    lastChangeAt: 0, cur: 'idle', timer: null, hostBroken: false
+    lastChangeAt: 0, cur: 'idle', timer: null, hostBroken: false,
+    lastActivityAt: Date.now(), pendingRemote: false, pulling: false
   };
   var m = meta();
   var btn = null, statusEl = null, overlay = null;
@@ -51,10 +54,14 @@
   function compute() {
     var now = Date.now();
     var h = hash(snapshot());
+    if (state.lastHash === null) state.lastHash = h;
     if (h !== state.lastHash) {
       state.lastHash = h;
       state.lastChangeAt = now;
       state.blueUntil = now + BLUE_MS;
+      try {
+        var mm0 = meta(); mm0.lastLocalChangeAt = now; saveMeta(mm0);
+      } catch (e) {}
     }
     var mm = meta();
     var snap = snapshot();
@@ -82,6 +89,13 @@
     if (c.dirty && state.signedIn && !state.backupBusy &&
         (Date.now() - state.lastChangeAt) > AUTOSYNC_DELAY) {
       doBackup(true);
+    }
+    // recarrega pendente de atualizacao remota quando ocioso
+    if (state.pendingRemote && state.signedIn && !state.backupBusy &&
+        (Date.now() - state.lastActivityAt) > IDLE_MS &&
+        !overlay && !document.getElementById('cc-terms-overlay')) {
+      state.pendingRemote = false;
+      pullFromCloud();
     }
   }
 
@@ -149,6 +163,87 @@
     });
   }
 
+  function markActivity() { state.lastActivityAt = Date.now(); state.pendingRemote = false; }
+  try {
+    document.addEventListener('keydown', markActivity, true);
+    document.addEventListener('pointerdown', markActivity, true);
+  } catch (e) {}
+
+  // Ancoragem: apos enviar, le o modifiedTime oficial do servidor
+  function anchorRemote() {
+    return callHost('CheckRemote').then(function (r) {
+      if (r && r.ok && r.exists && r.modifiedTime) {
+        var mm = meta();
+        mm.lastSeenRemote = r.modifiedTime;
+        mm.lastBackupAt = r.modifiedTime;
+        saveMeta(mm);
+        state.lastContactAt = Date.now();
+      }
+    });
+  }
+
+  // Regra last-write-wins: o lado mais recente vence.
+  function pullFromCloud() {
+    if (!host() || state.hostBroken || !state.signedIn || state.backupBusy || state.pulling) {
+      return Promise.resolve();
+    }
+    state.pulling = true;
+    return callHost('CheckRemote').then(function (r) {
+      state.pulling = false;
+      if (!r || !r.ok || !r.exists || !r.modifiedTime) return;
+      var mm = meta();
+      if (r.modifiedTime <= (mm.lastSeenRemote || 0)) return; // nada novo
+      state.lastContactAt = Date.now();
+      return callHost('Restore').then(function (rr) {
+        if (!rr || !rr.ok || !rr.payload) return;
+        var p = typeof rr.payload === 'string' ? JSON.parse(rr.payload) : rr.payload;
+        var remoteHash = hash({ reg: (p.reg === undefined ? null : p.reg),
+                               cfg: (p.cfg === undefined ? null : p.cfg) });
+        var localH = hash(snapshot());
+        var mm2 = meta();
+        if (remoteHash === localH) {
+          mm2.lastSeenRemote = r.modifiedTime;
+          mm2.lastBackupAt = r.modifiedTime;
+          mm2.lastSyncedHash = localH;
+          saveMeta(mm2);
+          paint();
+          return;
+        }
+        var remoteTime = r.modifiedTime;
+        var localTime = mm2.lastLocalChangeAt || 0;
+        if (remoteTime >= localTime) {
+          applyRemote(p, remoteTime);   // nuvem venceu
+        } else {
+          mm2.lastSeenRemote = remoteTime; // local venceu: sobe o daqui
+          saveMeta(mm2);
+          doBackup(true);
+        }
+      });
+    }).catch(function () { state.pulling = false; });
+  }
+
+  function applyRemote(p, remoteTime) {
+    try {
+      if (p.reg !== undefined && p.reg !== null) localStorage.setItem(REG_KEY, p.reg);
+      else localStorage.removeItem(REG_KEY);
+      if (p.cfg !== undefined && p.cfg !== null) localStorage.setItem(CFG_KEY, p.cfg);
+      else localStorage.removeItem(CFG_KEY);
+      var mm = meta();
+      mm.lastSyncedHash = hash(snapshot());
+      mm.lastBackupAt = remoteTime;
+      mm.lastSeenRemote = remoteTime;
+      saveMeta(mm);
+      state.lastHash = mm.lastSyncedHash;
+    } catch (e) { return; }
+    var idle = (Date.now() - state.lastActivityAt) > IDLE_MS;
+    var modalOpen = !!overlay || !!document.getElementById('cc-terms-overlay');
+    if (idle && !modalOpen && !state.backupBusy) {
+      location.reload();
+    } else {
+      state.pendingRemote = true; // tenta de novo no proximo poll
+    }
+  }
+
   function refreshHostState() {
     var h = host();
     if (!h || state.hostBroken) return Promise.resolve();
@@ -169,6 +264,8 @@
       if (r.ok) {
         state.signedIn = true; state.email = r.email || '';
         state.lastContactAt = Date.now(); state.blueUntil = Date.now() + BLUE_MS;
+        paint();
+        pullFromCloud(); // baixa da nuvem logo apos logar
       } else if (r.error !== 'host-broken') {
         alert('Falha no login Google: ' + (r.error || 'desconhecido'));
       }
@@ -196,6 +293,7 @@
         saveMeta(mm);
         state.lastContactAt = Date.now();
         state.blueUntil = Date.now() + BLUE_MS;
+        anchorRemote(); // carimbo oficial do servidor
       } else if (!auto) {
         alert('Falha ao enviar para o Drive: ' + (r.error || 'desconhecido'));
       }
@@ -296,6 +394,9 @@
     if (!state.timer) {
       state.timer = setInterval(paint, 2000);
       setInterval(refreshHostState, 30000);
+      setInterval(function () {
+        if (state.signedIn && !state.hostBroken) pullFromCloud();
+      }, POLL_MS);
       refreshHostState();
     }
     return true;
