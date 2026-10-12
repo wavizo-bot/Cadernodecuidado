@@ -1,0 +1,75 @@
+# CADERNO DE CUIDADO — manual do projeto (para o OpenCode reler depois)
+
+## O que é
+Agenda digital offline (Windows, Microsoft Store, formato MSIX) para acompanhamento
+de gestantes e bebês: cadastros, agenda de consultas, registro de eventos, exportação
+CSV/JSON. Não toma decisões: organiza, sugere datas por regras e facilita visualização;
+a decisão é humana (ex.: enfermeira chefe). Feito para ser COMPARTILHADO entre a equipe
+(administrativo cadastra, enfermeira verifica/decide/retifica).
+
+## Pastas e arquivos (C:\APPS\Caderno de Cuidado)
+- `index.html` — app React single-file (~1,9 MB). CHAVES LocalStorage:
+  `caderno-cuidado-registros-v1` (dados), `caderno-cuidado-config-v1` (config),
+  `caderno-drive-sync-v1` (metas: lastSyncedHash, lastBackupAt, lastSeenRemote,
+  lastLocalChangeAt), `caderno-termos-v1` (aceite: acceptedVersion, acceptedAt,
+  installedAt). Botões originais reaproveitados via title:
+  "Exportar backup JSON" / "Importar backup JSON ou CSV".
+- `sync-ui.js` / `sync-ui.css` — botão único ⇄ + modal (Sincronizar/Exportar/Importar/
+  Baixar do Drive/Entrar-Sair Google). Cores: verde=ok, azul=salvo-agora (4 s),
+  amarelo=sem contato sem risco, vermelho pulsante=sem contato COM risco. Fala com o
+  launcher via `chrome.webview.hostObjects.cadernoDrive` ("sync" é nome RESERVADO do
+  WebView2 — nunca usar; v1.25.1 corrigiu isso). Auto-backup 12 s após alteração;
+  poll da nuvem a cada 60 s; last-write-wins (v1.25.6). Download automático no login.
+- `terms-modal.js` / `terms-modal.css` — aceite bloqueante v1.0 (3 abas, sem ESC/clique
+  fora/X; "Quero sair" → host Quit() → window.close() → tela preta).
+- `manifest.webmanifest`, `sw.js`, `icons/` (só 6 versionados; resto local).
+- `politica-de-privacidade.html`, `termos-de-servico.html`, `aviso-legal.html` —
+  públicos (GitHub Pages). Contato legal: mmr05@hotmail.com, 11978831938.
+- `MSIX/` (GITIGNORADO — build local): `staging/` (fonte exata do pacote),
+  `src/Launcher.cs` (WinForms + WebView2, .NET Framework 4.x, compilado com csc.exe),
+  `Build-MSIX.ps1`, `devcert.pfx` (senha Caderno123!, teste local), `google-client.json`
+  (copiado do client Desktop do projeto Google — NUNCA commitar o client_secret).
+- `store-assets/` (gitignorado): screenshots da loja. `client_secret*.json`:
+  fica em `C:\APPS\ID.OAuth\` (gitignorado).
+
+## Launcher.cs — pontos críticos
+- `_sync` enraizado como campo (GC causava 0x80070490 — v1.25.1).
+- Origem do app: `https://app.caderno.local` (virtual host mapping). userData em
+  `%LocalAppData%\wavizo\CadernoDeCuidado\WebView2`.
+- OAuth Desktop + PKCE, escopos `openid email profile` + `drive.appdata`
+  (appDataFolder, arquivo `caderno-backup.json`). Token (refresh) em DPAPI por usuário.
+- **v1.25.7: login em popup interno** (padrão copiado do Acompanha Digital
+  `C:\APPS\AcompanhaDigital\msix\host\MainWindow.cs`): `ShowGoogleLoginPopup` abre Form
+  filha 560x700 com WebView2 próprio, filtra `http://127.0.0.1*`/`http://localhost*`,
+  intercepta `?code=`/`?error=` via `WebResourceRequested`, responde "Autorizando...",
+  devolve a URL e fecha sozinha. HttpListener + navegador externo REMOVIDOS.
+  `TryParseAuthRedirect` estático e testável. ATENÇÃO: `Close()` dentro de `FormClosed`
+  re-dispara o evento → stack overflow 0xc00000fd; guards `done`/`inFormClosed`.
+- Upload inicial usa `multipart/related` (form-data é rejeitado — v1.25.4).
+- Capabilities MSIX: `runFullTrust` (justificativa aprovada) + `internetClient`.
+
+## Identidade da loja (NÃO muda)
+Name `wavizo.Cadernodecuidado`, Publisher `CN=57BB464E-...`, Display `wavizo`,
+PFN `..._c5p81jb0en0bm`, Store ID `9P8DTDKV32JH`. Versão `A.B.C.D` — cada upload
+precisa de versão MAIOR. Último enviado: v1.25.6.0. Próximo: **v1.25.7.0**.
+
+## Google Cloud
+UM projeto por programa. Projeto "Caderno de cuidado": client Desktop
+`client_secret_768118833529-eq07...` (C:\APPS\ID.OAuth). Tela de consentimento precisa
+de: test users (modo teste), escopos, URLs de privacidade/termos. Verificação exigida
+para público geral. Outros projetos: Kuaa, Acompanha Digital, (falta Cadastro Clínico).
+
+## Repo GitHub (wavizo-bot/Cadernodecuidado, público)
+Essencial apenas: index, manifest, sw, sync-ui.*, terms-modal.*, 3 html legais,
+6 icons, .gitattributes/.gitignore. MSIX/, secrets, store-assets FORA.
+Secrets: client_secret*.json e google-client.json nunca versionar (LGPD + OAuth).
+
+## Lições pagas
+1. Nome de host object nunca "sync" (reservado WebView2).
+2. Objeto COM precisa de referência enraizada (GC → 0x80070490).
+3. Upload Drive inicial: multipart/related, não form-data.
+4. Close() em FormClosed = recursão → stack overflow; usar flags.
+5. makeappx "trava" quando WebView2 órfãos prendem arquivos — matar msedgewebview2;
+   se persistir, saída com nome novo destrava.
+6. Google embutido: login DENTRO de WebView2 popup funciona (contornar bloqueio de
+   window.close em abas externas foi o motivo da mudança v1.25.7).
