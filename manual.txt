@@ -47,17 +47,24 @@ a decisão é humana (ex.: enfermeira chefe). Feito para ser COMPARTILHADO entre
   re-dispara o evento → stack overflow 0xc00000fd; guards `done`/`inFormClosed`.
 - Upload inicial usa `multipart/related` (form-data é rejeitado — v1.25.4).
 - Capabilities MSIX: `runFullTrust` (justificativa aprovada) + `internetClient`.
+  Sem webcam/mic. **v1.25.8: `DenyPermissions` nega camera/mic/geo/notificações
+  no WebView principal e no popup** (o pedido de câmera visto em 12/10 partiu da
+  página do Google no login, não de código nosso — auditoria no log.txt).
 
 ## Identidade da loja (NÃO muda)
 Name `wavizo.Cadernodecuidado`, Publisher `CN=57BB464E-...`, Display `wavizo`,
 PFN `..._c5p81jb0en0bm`, Store ID `9P8DTDKV32JH`. Versão `A.B.C.D` — cada upload
-precisa de versão MAIOR. Último enviado: v1.25.6.0. Próximo: **v1.25.7.0**.
+precisa de versão MAIOR. Último enviado: v1.25.6.0. Próximo: **v1.25.8.0**.
 
 ## Google Cloud
 UM projeto por programa. Projeto "Caderno de cuidado": client Desktop
 `client_secret_768118833529-eq07...` (C:\APPS\ID.OAuth). Tela de consentimento precisa
 de: test users (modo teste), escopos, URLs de privacidade/termos. Verificação exigida
 para público geral. Outros projetos: Kuaa, Acompanha Digital, (falta Cadastro Clínico).
+DIAGNÓSTICO 3 PCs (12/10): backup mora em `appDataFolder` = POR CONTA GOOGLE + POR
+PROJETO. "Nenhum backup no Drive" = pasta vazia sob a conta logada → quase sempre
+conta diferente entre PCs (ou versão antiga com outro client). Regra de campo: mesmo
+e-mail no modal em todos os PCs. v1.25.8 mostra estado da nuvem no modal.
 
 ## Repo GitHub (wavizo-bot/Cadernodecuidado, público)
 Essencial apenas: index, manifest, sw, sync-ui.*, terms-modal.*, 3 html legais,

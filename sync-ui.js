@@ -39,7 +39,7 @@
     signedIn: false, email: '', lastContactAt: 0,
     lastHash: null, blueUntil: 0, backupBusy: false,
     lastChangeAt: 0, cur: 'idle', timer: null, hostBroken: false,
-    lastActivityAt: Date.now(), pendingRemote: false, pulling: false
+    lastActivityAt: Date.now(), pendingRemote: false, pulling: false, remote: null
   };
   var m = meta();
   var btn = null, statusEl = null, overlay = null;
@@ -111,9 +111,17 @@
     var acc = state.signedIn
       ? 'Conectado: ' + esc(state.email || 'conta Google')
       : 'Google Drive: desconectado';
+    var cloud = '';
+    if (state.signedIn) {
+      if (state.remote && state.remote.exists && state.remote.modifiedTime) {
+        cloud = '<br>Nuvem: backup de ' + fmtTime(state.remote.modifiedTime);
+      } else if (state.remote) {
+        cloud = '<br>Nuvem: nenhum backup nesta conta';
+      }
+    }
     statusEl.innerHTML =
       '<div><span class="dot" style="background:' + dot + '"></span><b>' + LABEL[c.s] + '</b></div>' +
-      '<div style="margin-top:5px">' + acc + '<br>Última sincronização: ' + fmtTime(mm.lastBackupAt) + '</div>';
+      '<div style="margin-top:5px">' + acc + '<br>Última sincronização: ' + fmtTime(mm.lastBackupAt) + cloud + '</div>';
   }
   function esc(s) {
     return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -253,6 +261,12 @@
       state.email = st.email || '';
       if (st.reachable) state.lastContactAt = Date.now();
       paint();
+      if (state.signedIn && !state.hostBroken) {
+        callHost('CheckRemote').then(function (r) {
+          state.remote = (r && r.ok) ? { exists: !!r.exists, modifiedTime: r.modifiedTime || 0 } : null;
+          paint();
+        });
+      }
     });
   }
 
@@ -317,7 +331,10 @@
         state.lastContactAt = Date.now();
         location.reload();
       } else {
-        alert('Falha ao baixar do Drive: ' + (r.error || 'nenhum backup encontrado'));
+        var msg = (r.error && r.error.indexOf('Nenhum backup') >= 0)
+          ? 'Nenhum backup na conta ' + (state.email || 'conectada') + '. Confira se todos os computadores usam a MESMA conta Google e a mesma vers\u00e3o do app.'
+          : (r.error || 'nenhum backup encontrado');
+        alert('Falha ao baixar do Drive: ' + msg);
       }
       paint();
     });
