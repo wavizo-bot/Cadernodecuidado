@@ -54,11 +54,19 @@ a decisão é humana (ex.: enfermeira chefe). Feito para ser COMPARTILHADO entre
   Restore nunca achava nada, Backup sempre duplicava — causa raiz do "nada para
   importar" nos 3 PCs) + dirty exige timestamp + auto-backup pula se nuvem mais
   nova. Teste E2E 15/10 com conta da equipe: APROVADO (detalhes no log.txt).
+- Regras de agenda (bundle, testadas por extração em node — ver log 15/10):
+  `Br()` pula mesversários cumpridos por realizada ±4 dias (tolerância); falta/
+  cancelada NÃO consomem (mantêm cobrança de encaixe); no save, consequência
+  remove agendada do mesmo dia e mesmo tipo (nunca dois eventos/dia).
+- Versão do rodapé dinâmica: `zg` carimbado no build + `GetAppVersion()` (lê o
+  AppxManifest) + corretor em sync-ui.js (sidebar-version e print-kicker).
 
 ## Identidade da loja (NÃO muda)
 Name `wavizo.Cadernodecuidado`, Publisher `CN=57BB464E-...`, Display `wavizo`,
 PFN `..._c5p81jb0en0bm`, Store ID `9P8DTDKV32JH`. Versão `A.B.C.D` — cada upload
-precisa de versão MAIOR. Último enviado: v1.25.6.0. Próximo: **v1.25.9.0**.
+precisa de versão MAIOR que a última ENVIADA (regra W1). Enviado: v1.25.7.0.
+Próximo: **v1.25.10.0** (inclui trava de permissões, ArrayList, gates de sync,
+rodapé dinâmico, tolerância de mesversário e fusão same-day).
 
 ## Google Cloud
 UM projeto por programa. Projeto "Caderno de cuidado": client Desktop

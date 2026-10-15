@@ -439,3 +439,41 @@
   });
   obs.observe(document.documentElement, { childList: true, subtree: true });
 })();
+
+/* Versao real instalada: o rodape mostra texto estatico do build web ("Versao X").
+   Aqui ele e corrigido com a versao do pacote MSIX via host (GetAppVersion, async).
+   Sem host (navegador/PWA), vale o texto carimbado no build. */
+(function () {
+  function fixFooter() {
+    var h = null;
+    try {
+      h = (window.chrome && window.chrome.webview &&
+           window.chrome.webview.hostObjects &&
+           window.chrome.webview.hostObjects.cadernoDrive) || null;
+    } catch (e) { return; }
+    if (!h || !h.GetAppVersion) return;
+    try {
+      Promise.resolve(h.GetAppVersion()).then(function (raw) {
+        if (!raw) return;
+        var parts = String(raw).split('.');
+        if (parts.length < 2 || !/^\d+$/.test(parts[0])) return;
+        var v = parts.slice(0, 3).join('.');
+        var els = document.querySelectorAll('.sidebar-version');
+        for (var i = 0; i < els.length; i++) {
+          var t = 'Vers\u00e3o ' + v;
+          if (els[i].textContent !== t) els[i].textContent = t;
+        }
+        var ks = document.querySelectorAll('.print-kicker');
+        for (var k = 0; k < ks.length; k++) {
+          var u = 'CADERNO DE CUIDADO VERS\u00c3O ' + v;
+          if (ks[k].textContent !== u) ks[k].textContent = u;
+        }
+      }).catch(function () {});
+    } catch (e) {}
+  }
+  var tries = 0;
+  var boot = setInterval(function () {
+    try { fixFooter(); } catch (e) {}
+    if (++tries > 40) clearInterval(boot);
+  }, 1000);
+})();
