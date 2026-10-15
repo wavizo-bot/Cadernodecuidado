@@ -65,8 +65,11 @@
     }
     var mm = meta();
     var snap = snapshot();
-    // Base vazia (instalacao nova, sem nenhum dado): nada a perder => limpo
-    var dirty = !!(snap.reg || snap.cfg) && h !== mm.lastSyncedHash;
+    // So e "sujo" o que o usuario realmente alterou NESTE aparelho
+    // (lastLocalChangeAt > 0). Sem isso, o boot grava defaults vazios e o
+    // auto-backup subiria base vazia por cima do backup da nuvem.
+    var dirty = !!(snap.reg || snap.cfg) && h !== mm.lastSyncedHash &&
+                (mm.lastLocalChangeAt || 0) > 0;
     var online = state.signedIn && (now - state.lastContactAt) < CONTACT_TTL;
     var s;
     if (now < state.blueUntil || state.backupBusy) s = 'saved';
@@ -85,8 +88,13 @@
       btn.title = 'Sincronizar — ' + LABEL[c.s];
     }
     if (statusEl) renderStatus(c);
-    // auto-backup quando logado e ha alteracoes ha mais de AUTOSYNC_DELAY
-    if (c.dirty && state.signedIn && !state.backupBusy &&
+    // auto-backup quando logado e ha alteracoes ha mais de AUTOSYNC_DELAY.
+    // NUNCA sobe se a nuvem conhecida e mais nova que a alteracao local:
+    // o boot grava defaults em etapas e isso marcaria base vazia como "nova".
+    var mmP = meta();
+    var remoteNewer = !!(state.remote && state.remote.exists && state.remote.modifiedTime &&
+      (mmP.lastLocalChangeAt || 0) < state.remote.modifiedTime);
+    if (c.dirty && state.signedIn && !state.backupBusy && !remoteNewer &&
         (Date.now() - state.lastChangeAt) > AUTOSYNC_DELAY) {
       doBackup(true);
     }
