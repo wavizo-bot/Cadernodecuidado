@@ -92,3 +92,6 @@ Secrets: client_secret*.json e google-client.json nunca versionar (LGPD + OAuth)
    se persistir, saída com nome novo destrava.
 6. Google embutido: login DENTRO de WebView2 popup funciona (contornar bloqueio de
    window.close em abas externas foi o motivo da mudança v1.25.7).
+7. Host object COM: métodos sync NÃO devolvem valor útil ao JS (só Task<T> vira
+   Promise legível); GetAppVersion é async por isso. Correção de footer provada
+   com manifest ao lado do exe (diag sem manifest retorna null — esperado).
