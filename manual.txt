@@ -199,8 +199,10 @@ AAB com `check-artifact.mjs` e copia para `entregas/play/`. Aumente
   SHA-1 de upload e de Play App Signing; testar login + restore em aparelho.
 - Testar a instalação Windows com o certificado de teste confiável; neste PC o
   sideload pode falhar com `0x800B0109` sem confiança administrativa.
-- Configurar/verificar GitHub Pages (`main` / `/docs`) na interface web; o `gh`
-  CLI não está instalado neste ambiente.
+- GitHub Pages habilitado e verificado em `main` / `/docs` (29/10/2026):
+  landing, `docs/app`, documentos legais, `robots.txt`, `sitemap.xml` e imagens
+  respondem HTTP 200. O `gh` CLI não está instalado; a configuração foi feita
+  pela API do GitHub.
 - Migrar componentes críticos para Rust, conforme a diretriz do projeto. A
   arquitetura atual (C#/JS/Java sobre WebView2/Capacitor) permanece como
   exceção arquitetural registrada; a migração não foi feita nesta entrega.
