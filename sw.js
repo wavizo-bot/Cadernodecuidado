@@ -1,9 +1,16 @@
 /* Caderno de Cuidado — service worker (cache-first offline) */
-const CACHE = "caderno-cuidado-v1";
+const CACHE = "caderno-cuidado-v3";
 const SHELL = [
   "./",
   "./index.html",
   "./manifest.webmanifest",
+  "./sync-ui.js",
+  "./sync-ui.css",
+  "./terms-modal.js",
+  "./terms-modal.css",
+  "./politica-de-privacidade.html",
+  "./termos-de-servico.html",
+  "./aviso-legal.html",
   "./icons/icon-32.png",
   "./icons/icon-192.png",
   "./icons/icon-512.png",

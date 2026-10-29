@@ -29,6 +29,16 @@
   display:flex;justify-content:space-between;gap:10px;
   padding:14px 22px 18px;border-top:1px solid #e5e7eb;
 }
+#cc-terms-docs{
+  margin:0;padding:8px 22px 0;font-size:11.5px;line-height:1.5;color:#4b5563;
+}
+#cc-terms-docs a{color:#1B7A43;text-decoration:underline}
+.cc-legal-links{
+  display:flex;flex-wrap:wrap;gap:4px 6px;margin-top:8px;
+  font-size:10.5px;line-height:1.4;color:#7c8a82;
+}
+.cc-legal-links a{color:inherit;text-decoration:underline;text-underline-offset:2px}
+.cc-legal-links a:hover{color:#174A3A}
 #cc-terms-footer button{
   padding:11px 26px;border-radius:9px;border:none;cursor:pointer;font-size:15px;
 }

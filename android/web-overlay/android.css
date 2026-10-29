@@ -1,0 +1,663 @@
+/* ==========================================================================
+   Caderno de Cuidado — camada de apresentação exclusiva do app Android.
+   Este arquivo NÃO é usado pelo MSIX/PWA: ele é copiado apenas para o pacote
+   Android pelo scripts/stage-web.mjs. A identidade visual é a mesma do
+   Windows; corrigimos só o que o toque e as telas estreitas exigem.
+
+   Faixas testadas:
+     ≤ 640 px  telefone em pé        (hero sem foto; linha do cuidado em blocos)
+     641–1100  telefone deitado e tablet em pé (foto menor; texto à esquerda)
+     ≥ 1101    tablet deitado / janela larga  (layout original do Windows)
+   ========================================================================== */
+
+:root {
+  -webkit-tap-highlight-color: rgba(23, 74, 58, 0.12);
+}
+
+/* O WebView é isolado por padding nativo (MainActivity). */
+body {
+  overscroll-behavior-y: contain;
+}
+
+/* A navegação lateral não pode desaparecer ao rolar (no desktop ela cabe na
+   tela; no telefone o rail precisa ficar sempre alcançável). */
+.sidebar {
+  position: sticky;
+  top: 0;
+  align-self: flex-start;
+  height: 100vh;
+  height: 100dvh;
+  overflow-y: auto;
+  overflow-x: hidden;
+  z-index: 30;
+  scrollbar-width: none;
+}
+
+.sidebar::-webkit-scrollbar {
+  display: none;
+}
+
+/* ---------------------------------------------------------------- toque -- */
+@media (pointer: coarse), (max-width: 860px) {
+  .nav-item {
+    min-height: 48px;
+  }
+
+  .topbar-actions .icon-button {
+    min-width: 38px;
+    min-height: 38px;
+  }
+
+  .button,
+  .button-small,
+  .modal-panel button:not(.close),
+  #cc-sync-modal .action {
+    min-height: 42px;
+  }
+
+  button,
+  a,
+  [role="button"] {
+    touch-action: manipulation;
+  }
+}
+
+/* ---------------------------------------- linha do cuidado em blocos ---- */
+/* Até 1100 px o hero fica estreito demais para cinco colunas na horizontal:
+   rótulo à esquerda e valor à direita em três linhas, sem "..." cortando. */
+@media (max-width: 1100px) {
+  .hero-panel {
+    background-position: 100% bottom;
+    background-size: auto 82%;
+  }
+
+  .hero-timeline {
+    grid-template-columns: 1fr;
+    gap: 0;
+    max-width: none;
+    margin: 14px 0 12px;
+    padding: 0;
+    background: rgba(255, 253, 247, 0.62);
+    border: 1px solid rgba(23, 74, 58, 0.14);
+    border-radius: 11px;
+  }
+
+  .timeline-connector,
+  .timeline-seed {
+    display: none;
+  }
+
+  .timeline-step {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 10px;
+    min-width: 0;
+    padding: 7px 11px;
+    text-align: left;
+  }
+
+  .timeline-step-next {
+    text-align: left;
+  }
+
+  .timeline-kicker {
+    flex: 0 0 auto;
+    font-size: 8px;
+    letter-spacing: 0.1em;
+    line-height: 1.2;
+  }
+
+  .timeline-step strong,
+  .timeline-step-next strong {
+    min-width: 0;
+    color: #315646;
+    text-align: right;
+    text-overflow: clip;
+    white-space: normal;
+    font-size: 11.5px;
+    line-height: 1.25;
+    overflow: visible;
+  }
+
+  .timeline-today {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 7px 11px;
+    text-align: left;
+    border: 0;
+    border-top: 1px dashed rgba(23, 74, 58, 0.24);
+    border-bottom: 1px dashed rgba(23, 74, 58, 0.24);
+  }
+
+  .timeline-today > span {
+    flex: 0 0 auto;
+    font-size: 7.5px;
+  }
+
+  .timeline-today strong {
+    font-size: 15px;
+    text-align: right;
+  }
+
+  .timeline-today small {
+    flex: 1 1 100%;
+    color: #78907f;
+    text-overflow: clip;
+    white-space: normal;
+    font-size: 8.5px;
+    line-height: 1.25;
+    overflow: visible;
+  }
+}
+
+/* --------------------------- telefone deitado / tablet em pé ------------- */
+/* A foto continua presente, mas recuada para a direita. O texto ocupa no
+   máximo 58% da largura, então nada fica sobre a ilustração. */
+@media (min-width: 641px) and (max-width: 1100px) {
+  .hero-copy {
+    max-width: 58%;
+    padding-bottom: 20px;
+  }
+
+  .hero-copy h1 {
+    font-size: clamp(29px, 3.8vw, 38px);
+  }
+
+  .hero-timeline {
+    max-width: 100%;
+  }
+}
+
+/* --------------------------------------------------------- telefone ------ */
+@media (max-width: 640px) {
+  /* Topo: ações cabem em uma linha mesmo em 360 px. */
+  .topbar {
+    padding: 10px 12px;
+    gap: 8px;
+  }
+
+  .topbar-actions {
+    gap: 5px;
+    padding: 2px;
+  }
+
+  .topbar-actions .icon-button {
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+    min-height: 36px;
+  }
+
+  .topbar-actions .button-small {
+    height: 40px;
+    padding: 0 12px;
+    font-size: 12.5px;
+    white-space: nowrap;
+  }
+
+  .content-area {
+    padding: 16px 13px 34px;
+  }
+
+  /* Hero: sem foto atrás do texto. Em 320–430 px a ilustração disputa espaço
+     com o título e com a linha do cuidado; o gradiente preserva a marca. */
+  .hero-panel {
+    background-image: none !important;
+    background: linear-gradient(138deg, #e6efe3 0%, #dce8db 48%, #eee6d6 100%);
+    border-radius: 15px;
+    min-height: 0;
+    box-shadow: 0 10px 26px rgba(23, 74, 58, 0.08);
+  }
+
+  .hero-panel::before {
+    background:
+      radial-gradient(circle at 96% 6%, rgba(189, 114, 85, 0.18), transparent 42%),
+      radial-gradient(circle at 4% 98%, rgba(23, 74, 58, 0.09), transparent 45%);
+  }
+
+  .hero-panel::after {
+    opacity: 0.5;
+  }
+
+  .hero-copy {
+    max-width: none;
+    padding: 22px 18px 18px;
+  }
+
+  .hero-copy h1 {
+    font-size: clamp(27px, 8.4vw, 36px);
+    letter-spacing: -0.01em;
+  }
+
+  .hero-description {
+    margin-top: 8px;
+    font-size: 13px;
+    line-height: 1.5;
+  }
+
+  .hero-note,
+  .quick-settings-fab {
+    display: none;
+  }
+
+  /* Cartões de métrica: 2x2 com respiro, sem fonte apertada. */
+  .metrics-row {
+    gap: 8px;
+  }
+
+  .metric-card {
+    padding: 12px 12px 13px;
+  }
+
+  .metric-card strong {
+    font-size: 24px;
+  }
+
+  .metric-card span,
+  .metric-card p {
+    font-size: 11.5px;
+    line-height: 1.3;
+  }
+
+  /* Cartões de pessoa: nome completo (nunca reticências) e chips que
+     quebram linha. A gestante/bebê têm prioridade sobre o espaço. */
+  .person-card {
+    padding: 14px 14px 12px;
+  }
+
+  .person-card-top {
+    gap: 9px;
+  }
+
+  .person-heading h3 {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    overflow-wrap: break-word;
+    line-height: 1.18;
+  }
+
+  .person-heading p {
+    white-space: normal;
+    overflow-wrap: break-word;
+    line-height: 1.3;
+  }
+
+  .person-label-row {
+    flex-wrap: wrap;
+    align-items: flex-start;
+    row-gap: 5px;
+  }
+
+  .person-label-row > span {
+    flex: 0 0 auto;
+  }
+
+  .suspended-label,
+  .closed-label,
+  .decision-label {
+    max-width: 100%;
+    white-space: normal;
+    line-height: 1.15;
+  }
+
+  .card-actions {
+    flex: 0 0 auto;
+  }
+
+  /* Cabeçalho de seção + ações: quebra bonita, sem esconder o CSV. */
+  .section-heading {
+    gap: 10px;
+  }
+
+  .section-heading h2 {
+    font-size: 26px;
+  }
+
+  /* Modais: mais área útil, bordas menores. */
+  .modal-backdrop {
+    padding: 10px;
+  }
+
+  .modal-panel {
+    width: 100%;
+    max-height: calc(100dvh - 20px);
+    border-radius: 14px;
+  }
+
+  .modal-header {
+    padding: 16px 16px 10px;
+  }
+
+  .modal-header h2 {
+    font-size: 24px;
+  }
+
+  #cc-sync-modal,
+  #cc-terms-modal {
+    width: 100%;
+    max-width: 100%;
+    max-height: calc(100dvh - 20px);
+  }
+
+  #cc-sync-modal .row,
+  #cc-terms-footer {
+    flex-wrap: wrap;
+  }
+
+  .list-toolbar {
+    gap: 8px;
+  }
+}
+
+/* ------------------------------------------------- telefone em paisagem -- */
+@media (max-height: 520px) and (orientation: landscape) {
+  .topbar {
+    height: 56px;
+    min-height: 56px;
+    padding-top: 8px;
+    padding-bottom: 8px;
+  }
+
+  .content-area {
+    padding-top: 12px;
+  }
+
+  .hero-panel {
+    min-height: 0;
+  }
+
+  .hero-copy {
+    padding: 16px 22px 15px;
+  }
+
+  .hero-copy h1 {
+    font-size: 30px;
+  }
+
+  .hero-description {
+    display: none;
+  }
+
+  .hero-timeline {
+    margin: 10px 0 0;
+  }
+}
+
+/* ------------------------------------------------------------ tablet ----- */
+@media (min-width: 641px) and (max-width: 860px) {
+  .content-area {
+    padding-left: 22px;
+    padding-right: 22px;
+  }
+
+  .sidebar {
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+
+  .modal-panel {
+    max-height: calc(100dvh - 32px);
+  }
+}
+
+/* Área visível com teclado virtual (dvh) no modal. */
+@supports (height: 100dvh) {
+  .modal-backdrop {
+    min-height: 100dvh;
+  }
+}
+
+/* ==========================================================================
+   MENU DO LOGO (somente telefone em pé, <=640 px)
+   O rail de 78 px sai do fluxo: o conteúdo usa a largura inteira. O emblema
+   do programa vira um botão fixo no canto superior esquerdo; ao toque, desce
+   um painel com as abas. Tocar no emblema de novo, no fundo escurecido ou em
+   uma aba fecha o painel.
+   ========================================================================== */
+@media (max-width: 640px) {
+  .sidebar {
+    position: fixed;
+    top: 10px;
+    left: 10px;
+    width: 56px;
+    height: 56px;
+    flex: none;
+    align-self: auto;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+    overflow: visible;
+    z-index: 90;
+    transition: transform 0.18s ease, opacity 0.18s ease;
+  }
+
+  /* Ao rolar para baixo, o emblema recolhe para não cobrir o cartão; ao
+     rolar para cima (ou perto do topo) ele volta. O menu continua acessível. */
+  html.cc-logo-hidden:not(.cc-nav-open) .sidebar {
+    transform: translateY(-84px);
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  /* Fecha: o fundo do rail some; fica só o emblema como botão. */
+  html:not(.cc-nav-open) .sidebar {
+    background: transparent;
+    border-color: transparent;
+  }
+
+  .sidebar .brand-lockup {
+    width: 56px;
+    height: 56px;
+    padding: 0;
+    margin: 0;
+    justify-content: center;
+    gap: 0;
+    border-radius: 16px;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .sidebar .brand-lockup:active .brand-mark {
+    transform: scale(0.95);
+  }
+
+  .sidebar .brand-lockup > div:last-child {
+    display: none;
+  }
+
+  .sidebar .brand-mark {
+    width: 44px;
+    height: 44px;
+    border-radius: 13px;
+    position: relative;
+    box-shadow: 0 7px 18px rgba(23, 74, 58, 0.3);
+    transition: transform 0.12s ease;
+  }
+
+  .sidebar .brand-mark img {
+    width: 30px;
+    height: 30px;
+  }
+
+  /* Seta discreta no canto do emblema: o menu desce daqui. */
+  .sidebar .brand-mark::after {
+    content: "";
+    position: absolute;
+    right: 6px;
+    bottom: 6px;
+    width: 5px;
+    height: 5px;
+    border-right: 1.5px solid #fff;
+    border-bottom: 1.5px solid #fff;
+    transform: rotate(45deg);
+    opacity: 0.85;
+    transition: transform 0.18s ease;
+  }
+
+  html.cc-nav-open .sidebar .brand-mark::after {
+    transform: rotate(225deg);
+  }
+
+  /* Fechado: nenhuma aba ocupa espaço (o botão é só o emblema). */
+  html:not(.cc-nav-open) .sidebar .sidebar-nav,
+  html:not(.cc-nav-open) .sidebar .sidebar-section-label,
+  html:not(.cc-nav-open) .sidebar .sidebar-spacer,
+  html:not(.cc-nav-open) .sidebar .rule-card,
+  html:not(.cc-nav-open) .sidebar .sidebar-footer {
+    display: none !important;
+  }
+
+  /* Aberto: painel creme ancorado no emblema. */
+  html.cc-nav-open .sidebar {
+    width: min(286px, calc(100vw - 20px));
+    height: auto;
+    max-height: calc(100dvh - 20px);
+    padding: 10px;
+    border: 1px solid #e4e2da;
+    border-radius: 18px;
+    background: #fffefa;
+    box-shadow: 0 22px 60px rgba(23, 48, 37, 0.26);
+    overflow-y: auto;
+    overflow-x: hidden;
+    animation: cc-nav-pop 0.18s ease both;
+    transform-origin: top left;
+  }
+
+  html.cc-nav-open .sidebar .brand-lockup {
+    width: auto;
+    height: 56px;
+    padding: 0 6px 8px;
+    margin: 0 0 6px;
+    justify-content: flex-start;
+    gap: 10px;
+    border-bottom: 1px solid #ece9e0;
+    border-radius: 10px;
+  }
+
+  html.cc-nav-open .sidebar .brand-lockup > div:last-child {
+    display: block !important;
+    min-width: 0;
+  }
+
+  html.cc-nav-open .sidebar .brand-name {
+    font-size: 22px;
+  }
+
+  html.cc-nav-open .sidebar .sidebar-section-label {
+    display: block !important;
+    padding: 2px 10px 6px;
+  }
+
+  html.cc-nav-open .sidebar .sidebar-nav {
+    display: grid !important;
+    gap: 3px;
+  }
+
+  html.cc-nav-open .sidebar .nav-item {
+    justify-content: flex-start;
+    gap: 12px;
+    min-height: 48px;
+    width: 100%;
+    padding: 0 12px;
+    font-size: 13.5px;
+  }
+
+  html.cc-nav-open .sidebar .nav-item span:not(.nav-count) {
+    display: inline !important;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  html.cc-nav-open .sidebar .nav-count {
+    position: static;
+    margin: 0 0 0 auto;
+  }
+
+  html.cc-nav-open .sidebar .sidebar-spacer,
+  html.cc-nav-open .sidebar .rule-card,
+  html.cc-nav-open .sidebar .sidebar-footer {
+    display: none !important;
+  }
+
+  /* Com qualquer modal aberto (termos/sincronização/consulta), o botão
+     flutuante não pode cobrir o cabeçalho do modal. */
+  html:has(.modal-backdrop) .sidebar,
+  html:has(#cc-sync-overlay) .sidebar,
+  html:has(#cc-terms-overlay) .sidebar,
+  html.cc-hide-nav .sidebar {
+    display: none !important;
+  }
+}
+
+@keyframes cc-nav-pop {
+  from {
+    opacity: 0.35;
+    transform: scale(0.97) translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+#cc-nav-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  background: rgba(23, 48, 37, 0.22);
+  animation: cc-nav-fade 0.18s ease both;
+}
+
+@keyframes cc-nav-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@media (min-width: 641px) {
+  #cc-nav-scrim {
+    display: none;
+  }
+}
+
+/* Em telas muito estreitas (320-380 px) os quatro botões do topo precisam
+   encolher para não encostarem no emblema fixo. */
+@media (max-width: 380px) {
+  .topbar-actions {
+    gap: 4px;
+  }
+
+  .topbar-actions .icon-button {
+    width: 34px;
+    height: 34px;
+    min-width: 34px;
+    min-height: 34px;
+  }
+
+  .topbar-actions .button-small {
+    padding: 0 9px;
+    font-size: 12px;
+  }
+}
+
+/* Acessibilidade: as abas laterais ficam só com ícone abaixo de 860 px; o
+   bridge preenche aria-label/title, mas o foco também precisa ser visível. */
+.nav-item:focus-visible,
+.icon-button:focus-visible,
+.button:focus-visible,
+.brand-lockup:focus-visible,
+button:focus-visible {
+  outline: 2px solid #174a3a;
+  outline-offset: 2px;
+}
+
+.nav-item:active {
+  transform: scale(0.98);
+}

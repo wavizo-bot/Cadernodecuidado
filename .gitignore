@@ -1,24 +1,82 @@
-# Dados de pacientes / exportações do app — nunca versionar (LGPD)
+# ---------------------------------------------------------------------------
+# Segredos e credenciais - NUNCA versionar
+# ---------------------------------------------------------------------------
+.env
+.env.*
+*.pfx
+*.p12
+*.key
+*.jks
+*.keystore
+keystore.properties
+client_secret*.json
+google-client.json
+certificates.zip
+
+# ---------------------------------------------------------------------------
+# Dados de execucao / LGPD - NUNCA versionar
+# ---------------------------------------------------------------------------
 caderno-cuidado-*.json
 export*.json
+*.sqlite
+*.sqlite3
+*.db
+*.log
 log.txt
-
-# Ambiente
-node_modules/
-dist/
+*.WebView2/
+**/EBWebView/
+tmp/
+*.tmp
+Thumbs.db
 .DS_Store
 
-# Pacote gerado pelo PWABuilder (subir só no Partner Center)
+# ---------------------------------------------------------------------------
+# Dependencias, caches e builds
+# ---------------------------------------------------------------------------
+node_modules/
+dist/
+build/
+build-android/
+.gradle/
+.idea/
+.vs/
+*.suo
+*.user
+
+# Android: fonte versionada; artefatos e gerados ficam fora
+android/node_modules/
+android/www/
+android/android/build/
+android/android/app/build/
+android/android/app/release/
+android/android/.gradle/
+android/android/local.properties
+android/android/app/src/main/assets/public/
+android/android/app/src/main/assets/google-client.json
+android/android/app/src/main/assets/capacitor.config.json
+android/android/app/src/main/assets/capacitor.plugins.json
+android/android/app/capacitor.build.gradle
+android/android/capacitor-cordova-android-plugins/
+android/android/keystore/
+
+# MSIX: fonte versionada; staging, certificado e pacotes ficam fora
+MSIX/staging/
+MSIX/build/
+MSIX/devcert.pfx
+MSIX/*.msix
+MSIX/*.msixbundle
+MSIX/*.cer
+
+# Artefatos de entrega e screenshots locais de loja
+entregas/
+store-assets/
 *.zip
 *.msix
 *.msixbundle
-*.pfx
+*.aab
+*.apk
 
-# Build MSIX local (contem certificado e segredo Google) + screenshots da loja
-MSIX/
-store-assets/
-
-# Na pasta icons, versionar apenas os referenciados pelo app/manifest
+# Na pasta icons, versionar apenas os referenciados pelo app/manifesto
 icons/*
 !icons/apple-touch-icon.png
 !icons/icon-32.png
@@ -27,6 +85,9 @@ icons/*
 !icons/maskable-512.png
 !icons/Square150x150Logo.png
 
-# Segredo OAuth Google (Desktop) - NAO versionar
-client_secret*.json
-google-client.json
+# ---------------------------------------------------------------------------
+# Documentacao publica e artefatos de entrega versionados por excecao:
+# docs/ (landing + docs/app gerado do mesmo commit) e README.md. Ver README.
+# ---------------------------------------------------------------------------
+!docs/
+!docs/**

@@ -3,7 +3,7 @@
    Aceite salvo em localStorage (flag + versao dos termos + instalacao). */
 (function () {
   'use strict';
-  var TERMS_VERSION = '1.0';
+  var TERMS_VERSION = '1.1';
   var KEY = 'caderno-termos-v1';
   var CONTACT_EMAIL = 'mmr05@hotmail.com';
   var CONTACT_PHONE = '11978831938';
@@ -15,9 +15,9 @@
         '<h3>Quais dados são coletados</h3>' +
         '<p>O Caderno de Cuidado registra os dados que você cadastra no aplicativo: informações de gestantes e bebês acompanhados (identificação, consultas, eventos, observações) e dados da equipe de saúde. Quando você ativa a sincronização opcional com o Google Drive, também são tratados seu nome e e-mail da conta Google, exclusivamente para identificar a conta conectada.</p>' +
         '<h3>Como são armazenados</h3>' +
-        '<p>Por padrão, todos os dados ficam somente no seu dispositivo (armazenamento local do aplicativo). Se você ativar o backup, uma cópia é guardada na pasta reservada do aplicativo dentro do seu próprio Google Drive. O token de acesso fica protegido no seu aparelho pelos recursos de segurança do Windows.</p>' +
+        '<p>Por padrão, todos os dados ficam somente no seu dispositivo (armazenamento local do aplicativo). Se você ativar o backup, uma cópia é guardada na pasta reservada do aplicativo dentro do seu próprio Google Drive, no escopo <b>drive.appdata</b>. Cada dispositivo grava um arquivo de operações próprio; o aplicativo baixa todos os arquivos válidos, preserva exclusões com marcadores de remoção e mostra conflitos para você resolver, sem sobrescrita silenciosa. O token de acesso fica protegido no seu aparelho pelo DPAPI (Windows) ou pelo Android Keystore (Android).</p>' +
         '<h3>Como são utilizados</h3>' +
-        '<p>Os dados são usados apenas para as funcionalidades do aplicativo: organizar cadastros, calcular próximas consultas, exibir cronologias e gerar exportações. Não utilizamos seus dados para publicidade, perfilamento ou qualquer finalidade diversa.</p>' +
+        '<p>Os dados são usados apenas para as funcionalidades do aplicativo: organizar cadastros, calcular próximas consultas, exibir cronologias e gerar exportações. Não utilizamos seus dados para publicidade, perfilamento ou qualquer finalidade diversa. O acesso ao Google Drive segue o Uso Limitado (Limited Use) da Política de Dados do Usuário dos Serviços de API do Google.</p>' +
         '<h3>Direitos do usuário sobre os dados (LGPD/GDPR)</h3>' +
         '<p>Você pode consultar, corrigir e excluir seus dados a qualquer momento dentro do aplicativo. Pode ainda revogar o acesso à sua conta Google quando quiser. A desinstalação do aplicativo pode remover os dados locais — exporte ou sincronize antes, se precisar mantê-los.</p>' +
         '<h3>Como contatar o desenvolvedor</h3>' +
@@ -34,10 +34,11 @@
         '<p>É permitido instalar e usar o aplicativo nos seus dispositivos para a finalidade descrita. É proibido: usar o aplicativo para qualquer atividade ilegal; tentar copiar, modificar, descompilar ou revender o aplicativo; inserir dados falsos ou de terceiros sem autorização; e burlar os mecanismos de licenciamento.</p>' +
         '<h3>Propriedade intelectual</h3>' +
         '<p>Todos os direitos sobre o aplicativo — código, layout, marcas, textos e atualizações — pertencem ao desenvolvedor. Estes termos concedem apenas uma licença pessoal, intransferível e revogável de uso, sem transferência de propriedade.</p>' +
-        '<h3>Versão de demonstração gratuita</h3>' +
-        '<p>Esta é uma versão de demonstração gratuita, válida por <b>um mês após a primeira instalação</b> neste aparelho. Para continuar usando após esse prazo, adquira a versão licenciada.</p>' +
-        '<h3>Como adquirir a versão licenciada</h3>' +
-        '<p>E-mail: ' + CONTACT_EMAIL + '<br>Telefone/WhatsApp: ' + CONTACT_PHONE + '</p>'
+        '<h3>Demonstração, teste interno e licenciamento</h3>' +
+        '<p>As versões da Microsoft Store e do teste interno do Google Play são gratuitas para avaliação e uso, sem prazo de expiração embutido e sem cobrança dentro do aplicativo. O teste interno pode ser encerrado ou substituído a qualquer momento.</p>' +
+        '<p>Uso institucional em larga escala, implantação assistida, treinamento, personalização, integração ou suporte dedicado devem ser contratados separadamente.</p>' +
+        '<h3>Como licenciar</h3>' +
+        '<p>E-mail: ' + CONTACT_EMAIL + '<br>Telefone/WhatsApp: ' + CONTACT_PHONE + '<br>Informe instituição, quantidade de dispositivos e necessidade.</p>'
     },
     {
       id: 'aviso', label: 'Aviso Legal',
@@ -99,6 +100,11 @@
         ' — leia as 3 abas para liberar o aplicativo</small></header>' +
         '<div id="cc-terms-tabs">' + tabsBtns + '</div>' +
         '<div id="cc-terms-body"><div id="cc-terms-text"></div></div>' +
+        '<p id="cc-terms-docs">Documentos completos: ' +
+          '<a href="./politica-de-privacidade.html" target="_blank" rel="noopener">Política de Privacidade</a> · ' +
+          '<a href="./termos-de-servico.html" target="_blank" rel="noopener">Termos de Serviço</a> · ' +
+          '<a href="./aviso-legal.html" target="_blank" rel="noopener">Aviso Legal</a>' +
+        '</p>' +
         '<div id="cc-terms-footer">' +
           '<button id="cc-btn-quit">Quero sair</button>' +
           '<button id="cc-btn-accept">Eu concordo</button>' +
@@ -144,11 +150,32 @@
     if (e.key === 'Escape' || e.keyCode === 27) { e.preventDefault(); e.stopPropagation(); }
   }
 
+  function injectLegalLinks() {
+    var footer = document.querySelector('.sidebar-footer');
+    if (!footer || footer.querySelector('.cc-legal-links')) return;
+    var box = document.createElement('div');
+    box.className = 'cc-legal-links';
+    box.innerHTML =
+      '<a href="./politica-de-privacidade.html" target="_blank" rel="noopener">Privacidade</a>' +
+      '<span aria-hidden="true">·</span>' +
+      '<a href="./termos-de-servico.html" target="_blank" rel="noopener">Termos</a>' +
+      '<span aria-hidden="true">·</span>' +
+      '<a href="./aviso-legal.html" target="_blank" rel="noopener">Aviso legal</a>';
+    footer.appendChild(box);
+  }
+
   function boot() {
     if (!document.body) { setTimeout(boot, 200); return; }
     var cur = load();
     if (!cur.installedAt) { cur.installedAt = Date.now(); save(cur); }
     if (cur.acceptedVersion !== TERMS_VERSION) show();
+    injectLegalLinks();
+    var tries = 0;
+    var timer = setInterval(function () {
+      injectLegalLinks();
+      tries += 1;
+      if (tries >= 40 || document.querySelector('.cc-legal-links')) clearInterval(timer);
+    }, 250);
   }
   boot();
 })();

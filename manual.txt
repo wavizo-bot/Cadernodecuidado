@@ -1,97 +1,212 @@
-# CADERNO DE CUIDADO — manual do projeto (para o OpenCode reler depois)
+# CADERNO DE CUIDADO — MANUAL DO PROJETO
+# Atualizado em 29/10/2026
 
-## O que é
-Agenda digital offline (Windows, Microsoft Store, formato MSIX) para acompanhamento
-de gestantes e bebês: cadastros, agenda de consultas, registro de eventos, exportação
-CSV/JSON. Não toma decisões: organiza, sugere datas por regras e facilita visualização;
-a decisão é humana (ex.: enfermeira chefe). Feito para ser COMPARTILHADO entre a equipe
-(administrativo cadastra, enfermeira verifica/decide/retifica).
+## 1. O que é
 
-## Pastas e arquivos (C:\APPS\Caderno de Cuidado)
-- `index.html` — app React single-file (~1,9 MB). CHAVES LocalStorage:
-  `caderno-cuidado-registros-v1` (dados), `caderno-cuidado-config-v1` (config),
-  `caderno-drive-sync-v1` (metas: lastSyncedHash, lastBackupAt, lastSeenRemote,
-  lastLocalChangeAt), `caderno-termos-v1` (aceite: acceptedVersion, acceptedAt,
-  installedAt). Botões originais reaproveitados via title:
-  "Exportar backup JSON" / "Importar backup JSON ou CSV".
-- `sync-ui.js` / `sync-ui.css` — botão único ⇄ + modal (Sincronizar/Exportar/Importar/
-  Baixar do Drive/Entrar-Sair Google). Cores: verde=ok, azul=salvo-agora (4 s),
-  amarelo=sem contato sem risco, vermelho pulsante=sem contato COM risco. Fala com o
-  launcher via `chrome.webview.hostObjects.cadernoDrive` ("sync" é nome RESERVADO do
-  WebView2 — nunca usar; v1.25.1 corrigiu isso). Auto-backup 12 s após alteração;
-  poll da nuvem a cada 60 s; last-write-wins (v1.25.6). Download automático no login.
-- `terms-modal.js` / `terms-modal.css` — aceite bloqueante v1.0 (3 abas, sem ESC/clique
-  fora/X; "Quero sair" → host Quit() → window.close() → tela preta).
-- `manifest.webmanifest`, `sw.js`, `icons/` (só 6 versionados; resto local).
-- `politica-de-privacidade.html`, `termos-de-servico.html`, `aviso-legal.html` —
-  públicos (GitHub Pages). Contato legal: mmr05@hotmail.com, 11978831938.
-- `MSIX/` (GITIGNORADO — build local): `staging/` (fonte exata do pacote),
-  `src/Launcher.cs` (WinForms + WebView2, .NET Framework 4.x, compilado com csc.exe),
-  `Build-MSIX.ps1`, `devcert.pfx` (senha Caderno123!, teste local), `google-client.json`
-  (copiado do client Desktop do projeto Google — NUNCA commitar o client_secret).
-- `store-assets/` (gitignorado): screenshots da loja. `client_secret*.json`:
-  fica em `C:\APPS\ID.OAuth\` (gitignorado).
+Agenda digital de apoio ao acompanhamento de gestantes e crianças de 0 a 2 anos.
+Funciona offline por padrão e está disponível como:
 
-## Launcher.cs — pontos críticos
-- `_sync` enraizado como campo (GC causava 0x80070490 — v1.25.1).
-- Origem do app: `https://app.caderno.local` (virtual host mapping). userData em
-  `%LocalAppData%\wavizo\CadernoDeCuidado\WebView2`.
-- OAuth Desktop + PKCE, escopos `openid email profile` + `drive.appdata`
-  (appDataFolder, arquivo `caderno-backup.json`). Token (refresh) em DPAPI por usuário.
-- **v1.25.7: login em popup interno** (padrão copiado do Acompanha Digital
-  `C:\APPS\AcompanhaDigital\msix\host\MainWindow.cs`): `ShowGoogleLoginPopup` abre Form
-  filha 560x700 com WebView2 próprio, filtra `http://127.0.0.1*`/`http://localhost*`,
-  intercepta `?code=`/`?error=` via `WebResourceRequested`, responde "Autorizando...",
-  devolve a URL e fecha sozinha. HttpListener + navegador externo REMOVIDOS.
-  `TryParseAuthRedirect` estático e testável. ATENÇÃO: `Close()` dentro de `FormClosed`
-  re-dispara o evento → stack overflow 0xc00000fd; guards `done`/`inFormClosed`.
-- Upload inicial usa `multipart/related` (form-data é rejeitado — v1.25.4).
-- Capabilities MSIX: `runFullTrust` (justificativa aprovada) + `internetClient`.
-  Sem webcam/mic. **v1.25.8: `DenyPermissions` nega camera/mic/geo/notificações
-  no WebView principal e no popup** (o pedido de câmera visto em 12/10 partiu da
-  página do Google no login, não de código nosso — auditoria no log.txt).
-- **v1.25.9: `ArrayList` em CheckRemote/FindBackup** (`as object[]` sempre dava null:
-  Restore nunca achava nada, Backup sempre duplicava — causa raiz do "nada para
-  importar" nos 3 PCs) + dirty exige timestamp + auto-backup pula se nuvem mais
-  nova. Teste E2E 15/10 com conta da equipe: APROVADO (detalhes no log.txt).
-- Regras de agenda (bundle, testadas por extração em node — ver log 15/10):
-  `Br()` pula mesversários cumpridos por realizada ±4 dias (tolerância); falta/
-  cancelada NÃO consomem (mantêm cobrança de encaixe); no save, consequência
-  remove agendada do mesmo dia e mesmo tipo (nunca dois eventos/dia).
-- Versão do rodapé dinâmica: `zg` carimbado no build + `GetAppVersion()` (lê o
-  AppxManifest) + corretor em sync-ui.js (sidebar-version e print-kicker).
+- app Windows (MSIX, WebView2 + host C#);
+- app Android (Capacitor/Gradle, AAB para o Google Play);
+- PWA/web (bundle single-file + service worker).
 
-## Identidade da loja (NÃO muda)
-Name `wavizo.Cadernodecuidado`, Publisher `CN=57BB464E-...`, Display `wavizo`,
-PFN `..._c5p81jb0en0bm`, Store ID `9P8DTDKV32JH`. Versão `A.B.C.D` — cada upload
-precisa de versão MAIOR que a última ENVIADA (regra W1). Enviado: v1.25.7.0.
-Próximo: **v1.25.10.0** (inclui trava de permissões, ArrayList, gates de sync,
-rodapé dinâmico, tolerância de mesversário e fusão same-day).
+O app organiza cadastros, consultas, faltas, cancelamentos, expectativas, agenda
+confirmada e pendências. Não é prontuário, sistema oficial, dispositivo médico,
+protocolo de urgência ou substituto da decisão de um profissional habilitado.
 
-## Google Cloud
-UM projeto por programa. Projeto "Caderno de cuidado": client Desktop
-`client_secret_768118833529-eq07...` (C:\APPS\ID.OAuth). Tela de consentimento precisa
-de: test users (modo teste), escopos, URLs de privacidade/termos. Verificação exigida
-para público geral. Outros projetos: Kuaa, Acompanha Digital, (falta Cadastro Clínico).
-DIAGNÓSTICO 3 PCs (12/10): backup mora em `appDataFolder` = POR CONTA GOOGLE + POR
-PROJETO. "Nenhum backup no Drive" = pasta vazia sob a conta logada → quase sempre
-conta diferente entre PCs (ou versão antiga com outro client). Regra de campo: mesmo
-e-mail no modal em todos os PCs. v1.25.8 mostra estado da nuvem no modal.
+## 2. Versões e situação atual
 
-## Repo GitHub (wavizo-bot/Cadernodecuidado, público)
-Essencial apenas: index, manifest, sw, sync-ui.*, terms-modal.*, 3 html legais,
-6 icons, .gitattributes/.gitignore. MSIX/, secrets, store-assets FORA.
-Secrets: client_secret*.json e google-client.json nunca versionar (LGPD + OAuth).
+| Item | Versão | Situação |
+|---|---|---|
+| Windows/web | 1.25.15 | MSIX 1.25.15.0 compilado, assinado e conferido |
+| Android | 1.27.7 | versionCode 8 (vC8), AAB/APK gerados e conferidos |
+| Landing/docs/app | 1.25.15 | landing e build web atualizados |
+| Último MSIX enviado à Store | 1.25.7.0 | 1.25.15.0 ainda não enviado |
+| Último AAB enviado à Play | vC2 (1.27.1) | vC3–vC8 ainda não enviados |
 
-## Lições pagas
-1. Nome de host object nunca "sync" (reservado WebView2).
-2. Objeto COM precisa de referência enraizada (GC → 0x80070490).
-3. Upload Drive inicial: multipart/related, não form-data.
-4. Close() em FormClosed = recursão → stack overflow; usar flags.
-5. makeappx "trava" quando WebView2 órfãos prendem arquivos — matar msedgewebview2;
-   se persistir, saída com nome novo destrava.
-6. Google embutido: login DENTRO de WebView2 popup funciona (contornar bloqueio de
-   window.close em abas externas foi o motivo da mudança v1.25.7).
-7. Host object COM: métodos sync NÃO devolvem valor útil ao JS (só Task<T> vira
-   Promise legível); GetAppVersion é async por isso. Correção de footer provada
-   com manifest ao lado do exe (diag sem manifest retorna null — esperado).
+Regra de versão: nunca reutilizar um número já enviado à Store/Play. Um envio
+rejeitado também queima o número. O MSIX e o AAB finais devem ser gerados de
+novo sempre que qualquer arquivo web/legal mudar.
+
+## 3. Arquitetura
+
+### App web
+
+- `index.html` — bundle React single-file (~1,9 MB). É a fonte do app web.
+- `sync-ui.js` / `sync-ui.css` — cliente de sincronização e modal do Google Drive.
+- `terms-modal.js` / `terms-modal.css` — aceite bloqueante, termos v1.1 e links
+  para os documentos públicos.
+- `manifest.webmanifest`, `sw.js`, `icons/` — PWA e cache offline.
+- Chaves de armazenamento local:
+  - `caderno-cuidado-registros-v1` — fichas;
+  - `caderno-cuidado-config-v1` — configurações da equipe;
+  - `caderno-drive-sync-v1` — metadados de sincronização (deviceId, geração,
+    lamport, heads, fingerprint etc.);
+  - `caderno-sync-ops-v1` — operações por registro;
+  - `caderno-sync-heads-v1` — cabeças materializadas;
+  - `caderno-sync-conflicts-v1` — conflitos pendentes;
+  - `caderno-termos-v1` — aceite dos termos (versão, data, instalação).
+
+### Host Windows
+
+- `MSIX/src/Launcher.cs` — WinForms + WebView2, compilado com `csc.exe`
+  (.NET Framework 4.x, C# 5).
+- `MSIX/Build-MSIX.ps1` — copia o app, carimba versão, compila, empacota e assina.
+- O host expõe `chrome.webview.hostObjects.cadernoDrive` com:
+  `GetState`, `CheckRemote`, `RestoreFile`, `Restore`, `Backup`, `Login`,
+  `Logout`, `ResetCloud`, `GetAppVersion`, `Quit`.
+- OAuth usa loopback local (nunca IP literal), PKCE,
+  escopo `drive.appdata`, token em DPAPI.
+- O host lista TODOS os arquivos válidos da pasta `appDataFolder`, sem filtro
+  por tamanho, e usa o `modifiedTime` do servidor.
+
+### Android
+
+- `android/` — projeto Capacitor 7 + Gradle 8.13, AGP 8.13.2, compile/target 36,
+  minSdk 24, R8 full mode.
+- `android/package.json` — versionName; `android/version-code.txt` — versionCode.
+- `android/scripts/stage-web.mjs` — copia a fonte web da raiz (incluindo
+  `sw.js`), adiciona `android.css`/`android-bridge.js`, carimba a versão e troca
+  “navegador” por “aparelho”.
+- `android/android/app/src/main/java/caderno/decuidado/app/`:
+  - `DrivePlugin.java` — contrato do plugin; sempre resolve `{ok:false,error}`;
+  - `DriveApi.java` — Drive v3 `appDataFolder`, lista todos os arquivos,
+    restaura por `fileId`, upload por dispositivo, reset;
+  - `OAuthFlow.java` — code + PKCE S256, Custom Tab; o login nativo do Play
+    Services é tentado primeiro e o único fallback é o navegador do sistema
+    (não existe `LoginWindow`/WebView de login — regra A8);
+  - `LoopbackServer.java` — retorno por loopback local;
+  - `AuthStore.java` — refresh/access token cifrado com Android Keystore;
+  - `FilesPlugin.java`, `PrintPlugin.java`;
+  - `MainActivity.java` — entrada do app.
+- `android/android/app/src/main/assets/google-client.json` é local e ignorado.
+
+## 4. Modelo de sincronização (v2)
+
+Cada dispositivo grava um arquivo próprio:
+`caderno-ops-<deviceId>.json`. O arquivo legado `caderno-backup.json` continua
+sendo lido para migração. O payload v2 tem:
+
+```
+{ v: 2, app: "caderno", generation, deviceId, ops: [...], state: {reg, cfg}, checksum }
+```
+
+Cada operação tem `opId` (UUID), `deviceId`, `docId`, `type` (`put`/`del`),
+`baseVersion`, `baseOpId`, `version`, `data`, `createdAt` e, quando for
+resolução, `resolves: [opIdLocal, opIdRemoto]`.
+
+Regras:
+
+- exclusões usam tombstones (`type: "del"`), nunca remoção silenciosa;
+- `recompute()` reconstrói heads e conflitos a partir das operações;
+- duas edições concorrentes preservam as duas versões e geram conflito;
+- a resolução escolhe uma versão, grava `resolves` e é propagada;
+- uma terceira ramificação continua em conflito e recebe nova cabeça;
+- geração maior bloqueia poll/merge até decisão explícita do usuário;
+- o checksum é calculado sobre o estado canônico; payload adulterado é rejeitado;
+- não há escolha por relógio, tamanho de arquivo ou “mais recente” automático;
+- o polling ocorre a cada 15 s quando a integração está ativa.
+
+## 5. Regras de agenda
+
+- A próxima data é o marco seguinte depois da última consulta realizada.
+- Consulta realizada até ±4 dias da data ideal cumpre o marco anterior e o
+  próximo marco parte da consulta realizada.
+- Distância maior que 4 dias abre decisão humana: manter o mesversário ou
+  iniciar um novo intervalo.
+- Intervalos menores que 20 dias geram aviso.
+- Falta e cancelamento NÃO consomem o marco ideal; a expectativa continua
+  aguardando encaixe.
+- Um dia, um evento: não pode existir mais de uma realizada, falta ou
+  cancelamento no mesmo dia. O app bloqueia o conflito; ao salvar um evento,
+  remove entradas agendadas conflitantes daquele dia.
+- O resultado é apoio à decisão, não prescrição.
+
+## 6. Build e release
+
+### Web/docs
+
+```
+node tools/build-docs-app.mjs
+```
+
+Copia o app da raiz para `docs/app/`, carimba a versão web e copia os seis
+ícones usados. A landing é `docs/index.html`; o Pages publica `main` / `/docs`.
+
+### Windows
+
+```
+powershell -ExecutionPolicy Bypass -File MSIX\Build-MSIX.ps1
+```
+
+Requer Windows SDK (`makeappx`, `signtool`), .NET Framework 4.x, DLLs do
+WebView2 em `MSIX/staging/` e o client OAuth Desktop local. O script carimba
+`$version`/`$appVersion`, compila `Launcher.cs`, empacota e assina. O MSIX final
+fica em `MSIX/`; a cópia de entrega vai para `entregas/windows/`.
+
+Identidade fixa: `wavizo.Cadernodecuidado`,
+`CN=57BB464E-553F-45B6-A4ED-B253157408EB`, `wavizo`,
+`wavizo.Cadernodecuidado_c5p81jb0en0bm`, Store ID `9P8DTDKV32JH`.
+
+### Android
+
+```
+powershell -ExecutionPolicy Bypass -File android\Build-Android.ps1
+```
+
+Requer JDK 21, SDK 36, Gradle, keystore local e clients OAuth Android. O script
+faz `npm run stage`, `cap sync`, `bundleRelease`, `assembleRelease`, confere o
+AAB com `check-artifact.mjs` e copia para `entregas/play/`. Aumente
+`android/package.json` e `android/version-code.txt` antes de cada envio.
+
+## 7. Testes e verificações
+
+- `node tests/sync-core.test.mjs` — 13/13 casos: seed, conflitos, resolução,
+  propagação, geração, checksum, migração v1, arquivos por dispositivo, merge
+  bidirecional.
+- `node android/scripts/check-artifact.mjs <aab>` — manifesto, R8, assets,
+  versão e encoding do AAB final.
+- Conferência local da landing em 1366×768 e 390×844: sem overflow horizontal,
+  imagens WebP reais, links legais/Store/Play, metadados/OG/robots/sitemap.
+- Verificação de UTF-8 sem BOM, U+FFFD = 0, ausência de endereços de loopback,
+  caminhos absolutos da máquina, marcadores de rascunho e varredura de segredos.
+- `git diff --check` antes do push.
+
+## 8. Documentos e landing
+
+- `docs/index.html` — landing com seções GH4 (a)–(k), links Store/Play, versão,
+  contato e repositório.
+- `docs/assets/` — cinco WebP desktop 1366×768, dois WebP celular 390×844 e
+  OG 1200×630; todos abaixo de 250 KB.
+- `docs/robots.txt` — permite a landing, bloqueia `/app/`.
+- `docs/sitemap.xml` — landing + três documentos legais.
+- `docs/app/` — build de produção do app web, gerado por
+  `tools/build-docs-app.mjs`.
+- Documentos públicos na raiz de `docs/`: política de privacidade, termos de
+  serviço e aviso legal, atualizados em 29/10/2026 para 1.25.15 (Windows/web) e
+  1.27.7 (Android). Contato: mmr05@hotmail.com / 11978831938.
+- `README.md` — visão geral, recursos, privacidade, requisitos, execução,
+  builds, estrutura, versão, links e resumo em inglês.
+
+## 9. Pendências e impedimentos
+
+- Enviar o MSIX 1.25.15.0 ao Partner Center (último enviado: 1.25.7.0) e
+  confirmar a análise. A Store reassina o pacote; o certificado de teste local
+  não é o da loja.
+- Enviar o AAB 1.27.7/vC8 ao Play Console (último enviado: vC2) e confirmar o
+  teste interno. O link do teste só entrega a build enviada.
+- Criar/confirmar os clients OAuth Android para `caderno.decuidado.app` com as
+  SHA-1 de upload e de Play App Signing; testar login + restore em aparelho.
+- Testar a instalação Windows com o certificado de teste confiável; neste PC o
+  sideload pode falhar com `0x800B0109` sem confiança administrativa.
+- Configurar/verificar GitHub Pages (`main` / `/docs`) na interface web; o `gh`
+  CLI não está instalado neste ambiente.
+- Migrar componentes críticos para Rust, conforme a diretriz do projeto. A
+  arquitetura atual (C#/JS/Java sobre WebView2/Capacitor) permanece como
+  exceção arquitetural registrada; a migração não foi feita nesta entrega.
+
+## 10. Contato
+
+E-mail: mmr05@hotmail.com
+Telefone/WhatsApp: 11978831938
+Repositório: https://github.com/wavizo-bot/Cadernodecuidado

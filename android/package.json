@@ -1,0 +1,21 @@
+{
+  "name": "caderno-de-cuidado-android",
+  "version": "1.27.7",
+  "private": true,
+  "description": "Caderno de Cuidado — agenda de gestantes e bebês (Android)",
+  "scripts": {
+    "stage": "node scripts/stage-web.mjs",
+    "sync": "npm run stage && cap sync android",
+    "build:debug": "npm run sync && cd android && gradlew.bat assembleDebug",
+    "build:release": "npm run sync && cd android && gradlew.bat assembleRelease bundleRelease"
+  },
+  "dependencies": {
+    "@capacitor/app": "^7.1.2",
+    "@capacitor/core": "^7.6.9"
+  },
+  "devDependencies": {
+    "@capacitor/android": "^7.6.9",
+    "@capacitor/assets": "^3.0.5",
+    "@capacitor/cli": "^7.6.9"
+  }
+}

@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+Disallow: /app/
+
+Sitemap: https://wavizo-bot.github.io/Cadernodecuidado/sitemap.xml

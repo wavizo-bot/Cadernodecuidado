@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Caderno de Cuidado</string>
+    <string name="title_activity_main">Caderno de Cuidado</string>
+    <string name="package_name">caderno.decuidado.app</string>
+    <string name="custom_url_scheme">caderno.decuidado.app</string>
+</resources>

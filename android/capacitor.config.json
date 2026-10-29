@@ -1,0 +1,11 @@
+{
+  "appId": "caderno.decuidado.app",
+  "appName": "Caderno de Cuidado",
+  "webDir": "www",
+  "backgroundColor": "#F7F5EE",
+  "android": {
+    "allowMixedContent": false,
+    "captureInput": true,
+    "webContentsDebuggingEnabled": false
+  }
+}
