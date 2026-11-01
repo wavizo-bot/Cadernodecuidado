@@ -18,8 +18,7 @@ import com.google.android.gms.common.api.Scope;
 
 import org.json.JSONObject;
 
-import java.net.SocketTimeoutException;
-import java.net.UnknownHostException;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
@@ -34,18 +33,19 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * Logout, GetAppVersion. Toda falha vira {ok:false,error} (nunca reject),
  * porque o sync-ui.js marca o host como quebrado ao primeiro reject.
  *
- * Login: primeiro tenta o seletor NATIVO de conta do Google (Play Services
- * AuthorizationClient, o fluxo recomendado, sem navegador). Se o aparelho não
- * tiver Play Services ou o client Android não estiver registrado para a
- * assinatura instalada, cai no Custom Tab + PKCE com loopback localhost.
- * Nunca usa WebView embutida (regra A8).
+ * Login: SOMENTE o seletor NATIVO de conta do Google (Play Services
+ * AuthorizationClient). A janela é do próprio app/Play Services e pode ser
+ * fechada pelo usuário; não abre navegador nem WebView (regra A8). Se o
+ * client Android não estiver registrado para a assinatura instalada, o login
+ * falha com mensagem clara — nunca cai em Custom Tab.
  */
 @CapacitorPlugin(name = "CadernoDrive")
 public class DrivePlugin extends Plugin {
 
-    private static final int REQ_NATIVE_AUTH = 4821;
+    static final int REQ_NATIVE_AUTH = 4821;
     private static final String DRIVE_SCOPE =
             "https://www.googleapis.com/auth/drive.appdata";
+    private static final long NATIVE_LOGIN_TIMEOUT_MS = 300000L;
 
     private interface Work {
         JSObject run() throws Exception;
@@ -244,15 +244,13 @@ public class DrivePlugin extends Plugin {
 
                 NativeResult nr = requestNativeToken();
                 if (nr == null) {
-                    // Sem resposta do seletor nativo em 25 s (client Android
-                    // ausente/incompatível). O Google bloqueia OAuth dentro de
-                    // WebView; vai direto ao navegador do sistema, que aceita.
-                    Log.i("CadernoLogin", "nativo sem resposta em 25 s; fallback navegador");
-                    f.signInBrowser(getActivity());
-                    finishLogin(call, o, f, f.email());
-                    return;
+                    Log.i("CadernoLogin", "seletor nativo sem resposta em "
+                            + (NATIVE_LOGIN_TIMEOUT_MS / 1000L) + " s");
+                    throw new OAuthFlow.AuthError("O login do Google não respondeu. "
+                            + "Feche o seletor de conta e tente novamente.");
                 }
                 if (nr.cancel) {
+                    Log.i("CadernoLogin", "seletor nativo fechado pelo usuário");
                     throw new OAuthFlow.AuthError("Login cancelado.");
                 }
                 if (nr.token != null) {
@@ -261,12 +259,11 @@ public class DrivePlugin extends Plugin {
                     return;
                 }
 
-                // Falha do nativo: o motivo vai para o log (sem token) e o
-                // fluxo continua no Custom Tab + loopback, nunca em WebView.
-                Log.i("CadernoLogin", "nativo indisponível: " + nr.reason
-                        + "; fallback navegador");
-                f.signInBrowser(getActivity());
-                finishLogin(call, o, f, f.email());
+                // Sem fallback de navegador: a janela de login é sempre a do
+                // app/Play Services. O motivo vai para o log, sem token.
+                Log.i("CadernoLogin", "nativo indisponível: " + nr.reason);
+                throw new OAuthFlow.AuthError("Não foi possível abrir o login do Google "
+                        + "neste aparelho. Verifique se o app está atualizado e tente de novo.");
             } catch (Exception e) {
                 o.put("ok", false);
                 o.put("error", message(e));
@@ -304,10 +301,10 @@ public class DrivePlugin extends Plugin {
 
     /**
      * Abre o seletor nativo de conta do Google e devolve o access token.
-     * Se o aparelho não tiver Play Services ou o OAuth Android não estiver
-     * registrado para a assinatura instalada, devolve fallback (o chamador
-     * cai no Custom Tab + loopback). Se o usuário fechar o seletor, devolve
-     * cancel.
+     * A janela pertence ao app/Play Services e o usuário pode fechá-la
+     * (volta como cancel). Se o client Android não estiver registrado para
+     * a assinatura instalada, devolve fallback com o motivo — o chamador
+     * NÃO abre navegador.
      */
     private NativeResult requestNativeToken() throws InterruptedException {
         final Activity activity = getActivity();
@@ -321,42 +318,58 @@ public class DrivePlugin extends Plugin {
                                 new Scope("profile"),
                                 new Scope(DRIVE_SCOPE)))
                         .build();
+                Log.i("CadernoLogin", "abrindo seletor nativo de conta");
                 Identity.getAuthorizationClient(activity)
                         .authorize(request)
                         .addOnSuccessListener(result -> {
                             if (result == null) {
+                                Log.w("CadernoLogin", "authorize sem resultado");
                                 nativeResults.offer(NativeResult.fallback("sem resultado"));
                                 return;
                             }
                             if (result.hasResolution()) {
                                 try {
+                                    Log.i("CadernoLogin", "authorize pediu resolução; "
+                                            + "abrindo AuthorizationActivity");
                                     activity.startIntentSenderForResult(
                                             result.getPendingIntent().getIntentSender(),
                                             REQ_NATIVE_AUTH, null, 0, 0, 0);
                                 } catch (Exception e) {
+                                    Log.w("CadernoLogin", "startIntentSenderForResult falhou", e);
                                     nativeResults.offer(NativeResult.fallback(e.getMessage()));
                                 }
                             } else {
                                 String token = result.getAccessToken();
+                                Log.i("CadernoLogin", "authorize devolveu token direto: "
+                                        + (token != null && !token.isEmpty()));
                                 nativeResults.offer(token == null || token.isEmpty()
                                         ? NativeResult.fallback("sem token")
                                         : NativeResult.token(token));
                             }
                         })
-                        .addOnFailureListener(e ->
-                                nativeResults.offer(NativeResult.fallback(e.getMessage())));
+                        .addOnFailureListener(e -> {
+                            Log.w("CadernoLogin", "authorize falhou: " + e.getMessage(), e);
+                            nativeResults.offer(NativeResult.fallback(e.getMessage()));
+                        });
             } catch (Throwable t) {
+                Log.w("CadernoLogin", "authorize lançou exceção", t);
                 nativeResults.offer(NativeResult.fallback(t.getMessage()));
             }
         });
-        return nativeResults.poll(25, TimeUnit.SECONDS);
+        NativeResult result = nativeResults.poll(NATIVE_LOGIN_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+        Log.i("CadernoLogin", "resultado do seletor nativo: "
+                + (result == null ? "timeout" : result.cancel ? "cancelado"
+                : result.token != null ? "token" : "falha: " + result.reason));
+        return result;
     }
 
-    @Override
-    protected void handleOnActivityResult(int requestCode, int resultCode, Intent data) {
-        super.handleOnActivityResult(requestCode, resultCode, data);
-        if (requestCode != REQ_NATIVE_AUTH) return;
+    /**
+     * Chamado pelo MainActivity.onActivityResult (o Bridge do Capacitor 7 não
+     * repassa requestCodes iniciados por startIntentSenderForResult).
+     */
+    void onNativeAuthResult(int resultCode, Intent data) {
         if (resultCode != Activity.RESULT_OK || data == null) {
+            Log.i("CadernoLogin", "AuthorizationActivity fechada (resultCode=" + resultCode + ")");
             nativeResults.offer(NativeResult.cancel());
             return;
         }
@@ -364,11 +377,14 @@ public class DrivePlugin extends Plugin {
             AuthorizationResult result = Identity.getAuthorizationClient(getActivity())
                     .getAuthorizationResultFromIntent(data);
             String token = result == null ? null : result.getAccessToken();
+            Log.i("CadernoLogin", "AuthorizationActivity devolveu token: "
+                    + (token != null && !token.isEmpty()));
             nativeResults.offer(token == null || token.isEmpty()
                     ? NativeResult.fallback("sem token")
                     : NativeResult.token(token));
         } catch (Exception e) {
-            nativeResults.offer(NativeResult.cancel());
+            Log.w("CadernoLogin", "getAuthorizationResultFromIntent falhou", e);
+            nativeResults.offer(NativeResult.fallback("resultado inválido"));
         }
     }
 
@@ -425,7 +441,7 @@ public class DrivePlugin extends Plugin {
     }
 
     private String message(Exception e) {
-        if (e instanceof UnknownHostException || e instanceof SocketTimeoutException) {
+        if (e instanceof IOException) {
             return "Sem conexão com a internet. Verifique a rede e tente de novo.";
         }
         String m = e.getMessage();

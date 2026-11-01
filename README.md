@@ -10,7 +10,7 @@ O Caderno de Cuidado foi pensado para o trabalho real da equipe: quem cadastra m
 
 - **Windows:** `1.25.15` — pacote MSIX `1.25.15.0`.
 - **Web/PWA:** `1.25.15` — build em `docs/app/`.
-- **Android:** `1.27.7` — versionCode `8` (vC8), em teste interno.
+- **Android:** `1.27.9` - versionCode `10` (vC10), em teste interno.
 
 ## Recursos principais
 
@@ -113,9 +113,9 @@ Pré-requisitos: JDK 21, Android SDK 36, Gradle 8.13, `keystore.properties` + ke
 powershell -ExecutionPolicy Bypass -File android\Build-Android.ps1
 ```
 
-O script executa `npm run stage`, `cap sync`, `bundleRelease`, `assembleRelease`, confere o AAB com `android/scripts/check-artifact.mjs` (R8, 18 assets web incluindo `sw.js`, versão, UTF-8) e copia o AAB/APK para `entregas/play/`. A versão fica em `android/package.json`; o versionCode, em `android/version-code.txt`. **Aumente os dois antes de cada envio à Play.** O AAB atual é `1.27.7` / `vC8`; o último envio foi `vC2`, e os builds intermediários não foram enviados.
+O script executa `npm run stage`, `cap sync`, `bundleRelease`, `assembleRelease`, confere o AAB com `android/scripts/check-artifact.mjs` (R8, 18 assets web incluindo `sw.js`, versão, UTF-8) e copia o AAB/APK para `entregas/play/`. A versão fica em `android/package.json`; o versionCode, em `android/version-code.txt`. **Aumente os dois antes de cada envio à Play.** O AAB atual é `1.27.9` / `vC10`; o build anterior `1.27.8` / `vC9` (login nativo corrigido) ficou local e foi para `entregas/play/historico`.
 
-O login Android tenta primeiro o Google Identity nativo (package + SHA-1). Se o client Android não estiver disponível para a assinatura instalada, o app abre Custom Tabs + PKCE com loopback HTTP local; não existe `LoginWindow` nem WebView embutida de login (regra A8).
+O login Android é SOMENTE a janela nativa do Google (Play Services, `AuthorizationActivity`): o app abre o seletor "Escolha uma conta" com o ícone do Caderno, o usuário escolhe/atualiza a permissão do Drive e a janela fecha. A janela pertence ao app/Play Services e pode ser fechada a qualquer momento pelo usuário. Não existe Custom Tab, navegador do sistema, `LoginWindow` nem WebView embutida de login (regra A8). O resultado da `AuthorizationActivity` chega ao app porque o `MainActivity` repassa `onActivityResult` ao plugin (o Bridge do Capacitor 7 só repassa requestCodes do mecanismo legado); sem isso o resultado se perdia após o seletor fechar. O client Android do projeto Google `cadernodecuidado` precisa estar registrado com o SHA-1 da assinatura instalada (upload `81:05…` para sideload e Play App Signing `FF:D2…` para a loja).
 
 ### Testes
 
@@ -173,7 +173,7 @@ O primeiro cobre seed local, conflitos, resolução, propagação, geração, ch
 - Teste interno Android: https://play.google.com/apps/internaltest/4701590393471812455
 - Repositório: https://github.com/wavizo-bot/Cadernodecuidado
 
-**Situação dos envios:** o MSIX `1.25.15.0` está compilado, assinado e verificado em `entregas/windows/`; o último envio à Microsoft Store foi `1.25.7.0`, portanto a loja só exibirá `1.25.15` depois do envio e da análise. O AAB `1.27.7` / `vC8` está pronto em `entregas/play/`; o último envio ao teste interno foi `vC2`, e a disponibilidade no link depende do envio no Play Console. A landing e este README mostram a versão do artefato desta entrega, não uma promessa de disponibilidade imediata na loja.
+**Situação dos envios:** o MSIX `1.25.15.0` está compilado, assinado e verificado em `entregas/windows/`; o último envio à Microsoft Store foi `1.25.7.0`, portanto a loja só exibirá `1.25.15` depois do envio e da análise. O AAB `1.27.9` / `vC10` está pronto em `entregas/play/`; o último envio confirmado ao teste interno do Play foi `vC8` (1.27.7). A landing e este README mostram a versão do artefato desta entrega, não uma promessa de disponibilidade imediata na loja.
 
 ## Limitações conhecidas e impedimentos
 

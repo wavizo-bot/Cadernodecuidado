@@ -19,10 +19,10 @@ protocolo de urgência ou substituto da decisão de um profissional habilitado.
 | Item | Versão | Situação |
 |---|---|---|
 | Windows/web | 1.25.15 | MSIX 1.25.15.0 compilado, assinado e conferido |
-| Android | 1.27.7 | versionCode 8 (vC8), AAB/APK gerados e conferidos |
+| Android | 1.27.9 | versionCode 10 (vC10), AAB/APK gerados e conferidos |
 | Landing/docs/app | 1.25.15 | landing e build web atualizados |
 | Último MSIX enviado à Store | 1.25.7.0 | 1.25.15.0 ainda não enviado |
-| Último AAB enviado à Play | vC2 (1.27.1) | vC3–vC8 ainda não enviados |
+| Último AAB enviado à Play | vC8 (1.27.7, em envio) | vC10 é o próximo número (vC9 ficou local) |
 
 Regra de versão: nunca reutilizar um número já enviado à Store/Play. Um envio
 rejeitado também queima o número. O MSIX e o AAB finais devem ser gerados de
@@ -72,13 +72,18 @@ novo sempre que qualquer arquivo web/legal mudar.
   - `DrivePlugin.java` — contrato do plugin; sempre resolve `{ok:false,error}`;
   - `DriveApi.java` — Drive v3 `appDataFolder`, lista todos os arquivos,
     restaura por `fileId`, upload por dispositivo, reset;
-  - `OAuthFlow.java` — code + PKCE S256, Custom Tab; o login nativo do Play
-    Services é tentado primeiro e o único fallback é o navegador do sistema
-    (não existe `LoginWindow`/WebView de login — regra A8);
-  - `LoopbackServer.java` — retorno por loopback local;
+  - `OAuthFlow.java` — sessão do login nativo do Play Services: guarda o
+    access token do seletor nativo, confere o escopo `drive.appdata`,
+    busca o e-mail e mantém a renovação silenciosa (refresh token de
+    versões antigas). O consentimento é SEMPRE a janela nativa
+    (`AuthorizationActivity`, seletor "Escolha uma conta"); NÃO existe
+    Custom Tab, navegador do sistema, `LoginWindow` nem WebView de login
+    (regra A8 e pedido do usuário);
+  - `MainActivity.java` — repassa o resultado da `AuthorizationActivity`
+    ao `DrivePlugin` via `onActivityResult` (o Bridge do Capacitor 7 só
+    repassa requestCodes do mecanismo legado de plugin); entrada do app;
   - `AuthStore.java` — refresh/access token cifrado com Android Keystore;
   - `FilesPlugin.java`, `PrintPlugin.java`;
-  - `MainActivity.java` — entrada do app.
 - `android/android/app/src/main/assets/google-client.json` é local e ignorado.
 
 ## 4. Modelo de sincronização (v2)
@@ -184,7 +189,7 @@ AAB com `check-artifact.mjs` e copia para `entregas/play/`. Aumente
   `tools/build-docs-app.mjs`.
 - Documentos públicos na raiz de `docs/`: política de privacidade, termos de
   serviço e aviso legal, atualizados em 29/10/2026 para 1.25.15 (Windows/web) e
-  1.27.7 (Android). Contato: mmr05@hotmail.com / 11978831938.
+  1.27.9 (Android). Contato: mmr05@hotmail.com / 11978831938.
 - `README.md` — visão geral, recursos, privacidade, requisitos, execução,
   builds, estrutura, versão, links e resumo em inglês.
 
@@ -193,10 +198,10 @@ AAB com `check-artifact.mjs` e copia para `entregas/play/`. Aumente
 - Enviar o MSIX 1.25.15.0 ao Partner Center (último enviado: 1.25.7.0) e
   confirmar a análise. A Store reassina o pacote; o certificado de teste local
   não é o da loja.
-- Enviar o AAB 1.27.7/vC8 ao Play Console (último enviado: vC2) e confirmar o
-  teste interno. O link do teste só entrega a build enviada.
-- Criar/confirmar os clients OAuth Android para `caderno.decuidado.app` com as
-  SHA-1 de upload e de Play App Signing; testar login + restore em aparelho.
+- Enviar o AAB 1.27.9/vC10 ao Play Console (último enviado ao teste interno:
+  vC8) e confirmar o teste interno. O link do teste só entrega a build enviada.
+- Resolver as 24 pendências de conflito de edição no aparelho (janela
+  "Conflitos de edição"; é decisão do usuário, nunca automática).
 - Testar a instalação Windows com o certificado de teste confiável; neste PC o
   sideload pode falhar com `0x800B0109` sem confiança administrativa.
 - GitHub Pages habilitado e verificado em `main` / `/docs` (29/10/2026):

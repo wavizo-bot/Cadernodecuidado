@@ -1,5 +1,6 @@
 package caderno.decuidado.app;
 
+import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
 import android.os.Build;
@@ -14,8 +15,25 @@ import androidx.core.view.WindowInsetsCompat;
 import androidx.core.view.WindowInsetsControllerCompat;
 
 import com.getcapacitor.BridgeActivity;
+import com.getcapacitor.PluginHandle;
 
 public class MainActivity extends BridgeActivity {
+
+    /* O seletor de conta do Google (AuthorizationActivity) devolve o token
+       por onActivityResult. No Capacitor 7 o Bridge só repassa requestCodes
+       registrados pelo mecanismo legado de plugin; como o DrivePlugin usa
+       startIntentSenderForResult direto, o resultado se perdia e o login
+       caía no navegador após 90 s. Repassamos explicitamente, como no
+       AcompanhaDigital. */
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode != DrivePlugin.REQ_NATIVE_AUTH || bridge == null) return;
+        PluginHandle handle = bridge.getPlugin("CadernoDrive");
+        if (handle != null && handle.getInstance() instanceof DrivePlugin) {
+            ((DrivePlugin) handle.getInstance()).onNativeAuthResult(resultCode, data);
+        }
+    }
 
     @Override
     public void onCreate(Bundle savedInstanceState) {

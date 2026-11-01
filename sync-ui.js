@@ -939,9 +939,9 @@
       if (state.loginSeq !== my) return;
       state.loginSeq++;
       state.connecting = false; setBusy(false); paint();
-      alert('O login não terminou a tempo.\n\nSe abriu uma janela do Google, ' +
-            'conclua-a; depois toque em "Entrar com Google" novamente.');
-    }, 190000);
+      alert('O login do Google não terminou.\n\nToque em "Entrar com Google" ' +
+            'e tente novamente.');
+    }, 330000);
     callHost('Login').then(function (r) {
       if (state.loginSeq !== my) return;
       clearTimeout(timer);

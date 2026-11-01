@@ -2,15 +2,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <!-- O login Google acontece em Custom Tab (navegador do sistema).
-         O <queries> é exigido a partir do Android 11 para descobrir o navegador. -->
-    <queries>
-        <intent>
-            <action android:name="android.intent.action.VIEW" />
-            <category android:name="android.intent.category.BROWSABLE" />
-            <data android:scheme="https" />
-        </intent>
-    </queries>
+    <!-- O login Google NÃO usa navegador: é o seletor nativo de conta do
+         Play Services (AuthorizationActivity), janela própria do app. -->
 
     <application
         android:allowBackup="true"
@@ -33,16 +26,6 @@
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-
-            <!-- Volta do navegador para o app após o consentimento do Google.
-                 É só um "deep link" de retorno; o redirect OAuth em si é o
-                 loopback http://localhost:porta/ tratado pelo LoopbackServer. -->
-            <intent-filter>
-                <action android:name="android.intent.action.VIEW" />
-                <category android:name="android.intent.category.DEFAULT" />
-                <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="caderno.decuidado.app" />
             </intent-filter>
 
         </activity>
