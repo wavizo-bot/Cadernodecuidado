@@ -5,8 +5,8 @@ $root    = 'C:\APPS\Caderno de Cuidado'
 $msix    = Join-Path $root 'MSIX'
 $staging = Join-Path $msix 'staging'
 $sdkBin  = 'C:\Program Files (x86)\Windows Kits\10\bin\10.0.26100.0\x64'
-$version = '1.25.15.0'
-$appVersion = '1.25.15'
+$version = '1.25.16.0'
+$appVersion = '1.25.16'
 $out = Join-Path $msix "wavizo.Cadernodecuidado_${version}_x64.msix"
 $utf8 = New-Object System.Text.UTF8Encoding($false)
 

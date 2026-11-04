@@ -12,7 +12,7 @@ import { fileURLToPath } from "node:url";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const out = path.join(root, "docs", "app");
-const WEB_VERSION = "1.25.15";
+const WEB_VERSION = "1.25.16";
 
 const FILES = [
   "index.html",

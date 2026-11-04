@@ -8,9 +8,9 @@ Agenda offline para equipes de atenção primária acompanharem gestantes e cria
 
 O Caderno de Cuidado foi pensado para o trabalho real da equipe: quem cadastra mantém a ficha e o contato atualizados; quem decide confere a data sugerida, a vaga e o profissional; quem acompanha vê o histórico, as faltas e o próximo passo. Funciona offline por padrão e pode ser instalado no Windows (MSIX pela Microsoft Store), no Android (AAB/Google Play) e no navegador como PWA.
 
-- **Windows:** `1.25.15` — pacote MSIX `1.25.15.0`.
-- **Web/PWA:** `1.25.15` — build em `docs/app/`.
-- **Android:** `1.27.9` - versionCode `10` (vC10), em teste interno.
+- **Windows:** `1.25.16` — pacote MSIX `1.25.16.0`.
+- **Web/PWA:** `1.25.16` — build em `docs/app/`.
+- **Android:** `1.27.10` - versionCode `11` (vC11), em teste interno.
 
 ## Recursos principais
 
@@ -20,6 +20,7 @@ O Caderno de Cuidado foi pensado para o trabalho real da equipe: quem cadastra m
 - Um dia, um evento: realizada, falta e cancelamento são mutuamente exclusivos; o app bloqueia um segundo evento no mesmo dia.
 - Falta e cancelamento não consomem o marco ideal: a expectativa continua aguardando encaixe.
 - Agenda confirmada, expectativas automáticas, pendências de decisão, avisos e conferências.
+- **Agenda da equipe (configurável):** nas Configurações é possível definir, por profissional, em quais dias da semana há atendimento e quantas vagas confirmadas cabem por dia (Ilimitado mantém o comportamento anterior; Fechado zera o dia). Datas específicas podem receber exceções com motivo (recesso municipal, reunião de equipe, curso, licença), fechando ou reduzindo as vagas de um profissional ou dos dois. Confirmar vaga fora da agenda continua possível e gera aviso — nunca bloqueio; a decisão é sempre da equipe. A regra fica salva nas configurações e sincroniza junto com elas (dispositivos em versões anteriores às desta entrega salvam sem a regra; atualize todos juntos).
 - Exportação CSV/JSON, importação de backup e impressão da agenda/expectativas.
 - Sincronização opcional entre Windows e Android pelo Google Drive, com merge por operação, tombstones, versões lógicas e conflitos visíveis para resolução.
 - Layout responsivo: referência de 1366×768 no desktop e 390×844 no celular.
@@ -113,7 +114,7 @@ Pré-requisitos: JDK 21, Android SDK 36, Gradle 8.13, `keystore.properties` + ke
 powershell -ExecutionPolicy Bypass -File android\Build-Android.ps1
 ```
 
-O script executa `npm run stage`, `cap sync`, `bundleRelease`, `assembleRelease`, confere o AAB com `android/scripts/check-artifact.mjs` (R8, 18 assets web incluindo `sw.js`, versão, UTF-8) e copia o AAB/APK para `entregas/play/`. A versão fica em `android/package.json`; o versionCode, em `android/version-code.txt`. **Aumente os dois antes de cada envio à Play.** O AAB atual é `1.27.9` / `vC10`; o build anterior `1.27.8` / `vC9` (login nativo corrigido) ficou local e foi para `entregas/play/historico`.
+O script executa `npm run stage`, `cap sync`, `bundleRelease`, `assembleRelease`, confere o AAB com `android/scripts/check-artifact.mjs` (R8, 18 assets web incluindo `sw.js`, versão, UTF-8) e copia o AAB/APK para `entregas/play/`. A versão fica em `android/package.json`; o versionCode, em `android/version-code.txt`. **Aumente os dois antes de cada envio à Play.** O AAB atual é `1.27.10` / `vC11`; o build anterior `1.27.9` / `vC10` (login nativo) está local e vai para `entregas/play/historico`.
 
 O login Android é SOMENTE a janela nativa do Google (Play Services, `AuthorizationActivity`): o app abre o seletor "Escolha uma conta" com o ícone do Caderno, o usuário escolhe/atualiza a permissão do Drive e a janela fecha. A janela pertence ao app/Play Services e pode ser fechada a qualquer momento pelo usuário. Não existe Custom Tab, navegador do sistema, `LoginWindow` nem WebView embutida de login (regra A8). O resultado da `AuthorizationActivity` chega ao app porque o `MainActivity` repassa `onActivityResult` ao plugin (o Bridge do Capacitor 7 só repassa requestCodes do mecanismo legado); sem isso o resultado se perdia após o seletor fechar. O client Android do projeto Google `cadernodecuidado` precisa estar registrado com o SHA-1 da assinatura instalada (upload `81:05…` para sideload e Play App Signing `FF:D2…` para a loja).
 
@@ -173,7 +174,7 @@ O primeiro cobre seed local, conflitos, resolução, propagação, geração, ch
 - Teste interno Android: https://play.google.com/apps/internaltest/4701590393471812455
 - Repositório: https://github.com/wavizo-bot/Cadernodecuidado
 
-**Situação dos envios:** o MSIX `1.25.15.0` está compilado, assinado e verificado em `entregas/windows/`; o último envio à Microsoft Store foi `1.25.7.0`, portanto a loja só exibirá `1.25.15` depois do envio e da análise. O AAB `1.27.9` / `vC10` está pronto em `entregas/play/`; o último envio confirmado ao teste interno do Play foi `vC8` (1.27.7). A landing e este README mostram a versão do artefato desta entrega, não uma promessa de disponibilidade imediata na loja.
+**Situação dos envios:** o MSIX `1.25.16.0` está compilado, assinado e verificado em `entregas/windows/`; o último envio à Microsoft Store foi `1.25.7.0`, portanto a loja só exibirá a versão atual depois do envio e da análise. O AAB `1.27.10` / `vC11` está pronto em `entregas/play/`; o envio do `vC10` (1.27.9) não foi confirmado, e o `vC11` pode ser enviado sobre ele de qualquer forma (versionCode maior). A landing e este README mostram a versão do artefato desta entrega, não uma promessa de disponibilidade imediata na loja.
 
 ## Limitações conhecidas e impedimentos
 

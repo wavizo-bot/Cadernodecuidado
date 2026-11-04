@@ -1,5 +1,5 @@
 # CADERNO DE CUIDADO — MANUAL DO PROJETO
-# Atualizado em 29/10/2026
+# Atualizado em 04/11/2026
 
 ## 1. O que é
 
@@ -18,11 +18,11 @@ protocolo de urgência ou substituto da decisão de um profissional habilitado.
 
 | Item | Versão | Situação |
 |---|---|---|
-| Windows/web | 1.25.15 | MSIX 1.25.15.0 compilado, assinado e conferido |
-| Android | 1.27.9 | versionCode 10 (vC10), AAB/APK gerados e conferidos |
-| Landing/docs/app | 1.25.15 | landing e build web atualizados |
-| Último MSIX enviado à Store | 1.25.7.0 | 1.25.15.0 ainda não enviado |
-| Último AAB enviado à Play | vC8 (1.27.7, em envio) | vC10 é o próximo número (vC9 ficou local) |
+| Windows/web | 1.25.16 | MSIX 1.25.16.0 compilado, assinado e conferido |
+| Android | 1.27.10 | versionCode 11 (vC11), AAB/APK gerados e conferidos |
+| Landing/docs/app | 1.25.16 | landing e build web atualizados |
+| Último MSIX enviado à Store | 1.25.7.0 | 1.25.16.0 ainda não enviado |
+| Último AAB enviado à Play | vC8 (1.27.7, em envio) | vC10 não confirmado; vC11 é o próximo número e pode ser enviado |
 
 Regra de versão: nunca reutilizar um número já enviado à Store/Play. Um envio
 rejeitado também queima o número. O MSIX e o AAB finais devem ser gerados de
@@ -39,7 +39,8 @@ novo sempre que qualquer arquivo web/legal mudar.
 - `manifest.webmanifest`, `sw.js`, `icons/` — PWA e cache offline.
 - Chaves de armazenamento local:
   - `caderno-cuidado-registros-v1` — fichas;
-  - `caderno-cuidado-config-v1` — configurações da equipe;
+  - `caderno-cuidado-config-v1` — configurações da equipe (nomes, paleta,
+    agentes e a agenda da equipe — dias/vagas e exceções);
   - `caderno-drive-sync-v1` — metadados de sincronização (deviceId, geração,
     lamport, heads, fingerprint etc.);
   - `caderno-sync-ops-v1` — operações por registro;
@@ -127,6 +128,37 @@ Regras:
   remove entradas agendadas conflitantes daquele dia.
 - O resultado é apoio à decisão, não prescrição.
 
+### Agenda da equipe (1.25.16 / 1.27.10)
+
+Nas Configurações, os "dias e vagas" podem ser definidos por profissional
+("Médica" e "Enfermeira", com os nomes editados pela equipe):
+
+- para cada dia da semana: **Ilimitado** (comportamento anterior), **Fechado**
+  ou um limite de vagas confirmadas por dia (1 a 12);
+- **dias de exceção** por data específica, com motivo opcional (recesso
+  municipal, reunião de equipe, curso, licença), fechando ou reduzindo as
+  vagas de um dos profissionais ou dos dois.
+
+Como o app usa a regra:
+
+- o modal de ocorrência mostra, na hora, quando a data cai fora da agenda
+  (dia fechado, com o motivo registrado, quando houver) ou quando o limite
+  já foi atingido (quantas vagas em uso naquela data para o profissional);
+- **confirmar vaga fora da agenda é sempre permitido e nunca é bloqueado**;
+  ao salvar, aparece um aviso (toast) explicando a situação;
+- o cartão do cadastro mostra, junto ao "confirmado", o marcador do dia:
+  "dia fechado" (com o motivo no detalhe sob o toque) ou "N de N vagas
+  (encaixe)" quando o limite foi estourado;
+- a regra é normalizada (valores fora do intervalo viram Ilimitado; datas
+  inválidas são descartadas) e viaja dentro das configurações: sincronização
+  v2 (doc `__config__`), backup local e importação de JSON. Ao importar um
+  backup sem a regra, a regra atual é mantida; com a regra no arquivo, a
+  regra importada passa a valer.
+- Versões anteriores à 1.25.16/1.27.10 abrem as configurações sem a regra e,
+  ao salvar lá, descartam a regra do dispositivo: **atualize os dispositivos
+  juntos** (ou em qualquer ordem, mas sem salvar configurações na versão
+  antiga depois que a regra existir).
+
 ## 6. Build e release
 
 ### Web/docs
@@ -188,18 +220,19 @@ AAB com `check-artifact.mjs` e copia para `entregas/play/`. Aumente
 - `docs/app/` — build de produção do app web, gerado por
   `tools/build-docs-app.mjs`.
 - Documentos públicos na raiz de `docs/`: política de privacidade, termos de
-  serviço e aviso legal, atualizados em 29/10/2026 para 1.25.15 (Windows/web) e
-  1.27.9 (Android). Contato: mmr05@hotmail.com / 11978831938.
+  serviço e aviso legal, atualizados em 04/11/2026 para 1.25.16 (Windows/web) e
+  1.27.10 (Android). Contato: mmr05@hotmail.com / 11978831938.
 - `README.md` — visão geral, recursos, privacidade, requisitos, execução,
   builds, estrutura, versão, links e resumo em inglês.
 
 ## 9. Pendências e impedimentos
 
-- Enviar o MSIX 1.25.15.0 ao Partner Center (último enviado: 1.25.7.0) e
+- Enviar o MSIX 1.25.16.0 ao Partner Center (último enviado: 1.25.7.0) e
   confirmar a análise. A Store reassina o pacote; o certificado de teste local
   não é o da loja.
-- Enviar o AAB 1.27.9/vC10 ao Play Console (último enviado ao teste interno:
-  vC8) e confirmar o teste interno. O link do teste só entrega a build enviada.
+- Enviar o AAB 1.27.10/vC11 ao Play Console e confirmar o teste interno (o
+  envio do vC10 não foi confirmado; vC11 pode ir sobre ele). O link do teste
+  só entrega a build enviada.
 - Resolver as 24 pendências de conflito de edição no aparelho (janela
   "Conflitos de edição"; é decisão do usuário, nunca automática).
 - Testar a instalação Windows com o certificado de teste confiável; neste PC o
