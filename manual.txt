@@ -1,5 +1,5 @@
 # CADERNO DE CUIDADO — MANUAL DO PROJETO
-# Atualizado em 04/11/2026
+# Atualizado em 05/11/2026
 
 ## 1. O que é
 
@@ -18,11 +18,11 @@ protocolo de urgência ou substituto da decisão de um profissional habilitado.
 
 | Item | Versão | Situação |
 |---|---|---|
-| Windows/web | 1.25.16 | MSIX 1.25.16.0 compilado, assinado e conferido |
-| Android | 1.27.10 | versionCode 11 (vC11), AAB/APK gerados e conferidos |
-| Landing/docs/app | 1.25.16 | landing e build web atualizados |
-| Último MSIX enviado à Store | 1.25.7.0 | 1.25.16.0 ainda não enviado |
-| Último AAB enviado à Play | vC8 (1.27.7, em envio) | vC10 não confirmado; vC11 é o próximo número e pode ser enviado |
+| Windows/web | 1.25.17 | MSIX 1.25.17.0 compilado, assinado e conferido |
+| Android | 1.27.11 | versionCode 12 (vC12), AAB/APK gerados e conferidos |
+| Landing/docs/app | 1.25.17 | landing e build web atualizados |
+| Último MSIX enviado à Store | 1.25.7.0 | 1.25.17.0 ainda não enviado |
+| Último AAB enviado à Play | vC8 (1.27.7, em envio) | vC10 e vC11 não confirmados; vC12 é o próximo número e pode ser enviado |
 
 Regra de versão: nunca reutilizar um número já enviado à Store/Play. Um envio
 rejeitado também queima o número. O MSIX e o AAB finais devem ser gerados de
@@ -128,7 +128,7 @@ Regras:
   remove entradas agendadas conflitantes daquele dia.
 - O resultado é apoio à decisão, não prescrição.
 
-### Agenda da equipe (1.25.16 / 1.27.10)
+### Agenda da equipe (1.25.17 / 1.27.11)
 
 Nas Configurações, os "dias e vagas" podem ser definidos por profissional
 ("Médica" e "Enfermeira", com os nomes editados pela equipe):
@@ -158,6 +158,27 @@ Como o app usa a regra:
   ao salvar lá, descartam a regra do dispositivo: **atualize os dispositivos
   juntos** (ou em qualquer ordem, mas sem salvar configurações na versão
   antiga depois que a regra existir).
+- a partir de 1.25.17/1.27.11, a regra semanal pode ser definida por tipo de
+  ficha: abas "Agenda geral", "Gestantes" e "Bebãs" nas Configurações.
+  A aba do tipo vale quando algum dia do tipo deixar de ser Ilimitado; os
+  dias de exceção continuam valendo para os dois tipos.
+
+### Ajustes do dia a dia (1.25.17 / 1.27.11)
+
+- Duplicidade possível nas fichas:
+  em vez de bloquear, o app mostra um AVISO com as opções "Fechar aviso" e
+  "Salvar mesmo assim"; confira a ficha existente antes de criar outra.
+- DPP(opcional): a ficha pode ficar salva sem DUM e sem DPP; o
+  acompanhamento automãtico (mesversário etc.) só aparece quando as
+  datas existirem.
+- CNS: o campo aceita apenas números (qualquer letra ou símbolo
+  digitado é ignorado).
+- Datas (DUM, DPP, parto, última consulta): aceitam dia/mês e o app
+  assume o ano atual do dispositivo; para outro ano, digite dia/mês/ano.
+- Nome, endereço e cadastro: espaços no início são ignorados.
+- Emblema "Cadastro: NNN": agora é um botão que copia apenas o número.
+- Barra lateral: fundo com "doodles" ilustrados (gestantes e bebês),
+  discreto em todas as paletas.
 
 ## 6. Build e release
 
@@ -220,18 +241,18 @@ AAB com `check-artifact.mjs` e copia para `entregas/play/`. Aumente
 - `docs/app/` — build de produção do app web, gerado por
   `tools/build-docs-app.mjs`.
 - Documentos públicos na raiz de `docs/`: política de privacidade, termos de
-  serviço e aviso legal, atualizados em 04/11/2026 para 1.25.16 (Windows/web) e
-  1.27.10 (Android). Contato: mmr05@hotmail.com / 11978831938.
+  serviço e aviso legal, atualizados em 05/11/2026 para 1.25.17 (Windows/web) e
+  1.27.11 (Android). Contato: mmr05@hotmail.com / 11978831938.
 - `README.md` — visão geral, recursos, privacidade, requisitos, execução,
   builds, estrutura, versão, links e resumo em inglês.
 
 ## 9. Pendências e impedimentos
 
-- Enviar o MSIX 1.25.16.0 ao Partner Center (último enviado: 1.25.7.0) e
+- Enviar o MSIX 1.25.17.0 ao Partner Center (último enviado: 1.25.7.0) e
   confirmar a análise. A Store reassina o pacote; o certificado de teste local
   não é o da loja.
-- Enviar o AAB 1.27.10/vC11 ao Play Console e confirmar o teste interno (o
-  envio do vC10 não foi confirmado; vC11 pode ir sobre ele). O link do teste
+- Enviar o AAB 1.27.11/vC12 ao Play Console e confirmar o teste interno (os
+  envios do vC10 e do vC11 não foram confirmados; o vC12 pode ir sobre eles). O link do teste
   só entrega a build enviada.
 - Resolver as 24 pendências de conflito de edição no aparelho (janela
   "Conflitos de edição"; é decisão do usuário, nunca automática).

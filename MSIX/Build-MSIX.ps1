@@ -1,12 +1,12 @@
-﻿# Rebuild do pacote MSIX — Caderno de Cuidado (v1.25+ com Sync Google Drive)
+# Rebuild do pacote MSIX — Caderno de Cuidado (v1.25+ com Sync Google Drive)
 # Uso: powershell -ExecutionPolicy Bypass -File Build-MSIX.ps1
 $ErrorActionPreference = 'Stop'
 $root    = 'C:\APPS\Caderno de Cuidado'
 $msix    = Join-Path $root 'MSIX'
 $staging = Join-Path $msix 'staging'
 $sdkBin  = 'C:\Program Files (x86)\Windows Kits\10\bin\10.0.26100.0\x64'
-$version = '1.25.16.0'
-$appVersion = '1.25.16'
+$version = '1.25.17.0'
+$appVersion = '1.25.17'
 $out = Join-Path $msix "wavizo.Cadernodecuidado_${version}_x64.msix"
 $utf8 = New-Object System.Text.UTF8Encoding($false)
 
