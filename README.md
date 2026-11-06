@@ -8,9 +8,9 @@ Agenda offline para equipes de atenção primária acompanharem gestantes e cria
 
 O Caderno de Cuidado foi pensado para o trabalho real da equipe: quem cadastra mantém a ficha e o contato atualizados; quem decide confere a data sugerida, a vaga e o profissional; quem acompanha vê o histórico, as faltas e o próximo passo. Funciona offline por padrão e pode ser instalado no Windows (MSIX pela Microsoft Store), no Android (AAB/Google Play) e no navegador como PWA.
 
-- **Windows:** `1.25.17` — pacote MSIX `1.25.17.0`.
-- **Web/PWA:** `1.25.17` — build em `docs/app/`.
-- **Android:** `1.27.11` - versionCode `12` (vC12), em teste interno.
+- **Windows:** `1.25.18` — pacote MSIX `1.25.18.0`.
+- **Web/PWA:** `1.25.18` — build em `docs/app/`.
+- **Android:** `1.27.12` - versionCode `13` (vC13), em teste interno.
 
 ## Recursos principais
 
@@ -23,6 +23,7 @@ O Caderno de Cuidado foi pensado para o trabalho real da equipe: quem cadastra m
 - **Agenda da equipe (configurável):** nas Configurações é possível definir, por profissional, em quais dias da semana há atendimento e quantas vagas confirmadas cabem por dia (Ilimitado mantém o comportamento anterior; Fechado zera o dia). Datas específicas podem receber exceções com motivo (recesso municipal, reunião de equipe, curso, licença), fechando ou reduzindo as vagas de um profissional ou dos dois. Confirmar vaga fora da agenda continua possível e gera aviso — nunca bloqueio; a decisão é sempre da equipe. A regra fica salva nas configurações e sincroniza junto com elas (dispositivos em versões anteriores às desta entrega salvam sem a regra; atualize todos juntos). A partir de 1.25.17/1.27.11, a regra semanal tambêm pode ser definida por tipo de ficha: abas "Agenda geral", "Gestantes" e "Bebês" nas Configurações — a aba do tipo vale quando algum dia do tipo deixar de ser Ilimitado; os dias de exceção valem para os dois tipos.
 - **Ajustes do dia a dia (1.25.17/1.27.11):** duplicidade possível virou aviso com botáo "Salvar mesmo assim" (em vez de bloqueio); DPP deixou de ser obrigatõria — a ficha continua salva sem DUM e sem DPP (o acompanhamento automãtico só aparece quando as datas existem); CNS aceita apenas números; DUM, DPP, parto e última consulta aceitam dia/mês com ano do dispositivo (ou dia/mês/ano); nome, endereço e cadastro ignoram espaços no início; o emblema "Cadastro: NNN" virou botáo que copia apenas o número; a barra lateral ganhou fundo com "doodles" ilustrados no tema (gestantes e bebês).
 - Exportação CSV/JSON, importação de backup e impressão da agenda/expectativas.
+- **Tela de primeiro uso e leitura da página (1.25.18/1.27.12):** o primeiro acesso abre uma apresentação em três passos, com opção de explorar o app com 8 fichas fictícias de exemplo ou começar vazio, links para os documentos legais e nota de privacidade; a escolha fica no dispositivo e reaparece ao usar "Iniciar novo caderno". Em telas de 861px ou mais de largura, a barra lateral fica fixa ao rolar, com rolagem própria discreta; no celular ela continua rolando junto com o conteúdo. O marco do mesversário da puericultura também passa a respeitar a tolerância de ±4 dias já documentada: consulta até 4 dias antes do versário confirma o marco anterior.
 - Sincronização opcional entre Windows e Android pelo Google Drive, com merge por operação, tombstones, versões lógicas e conflitos visíveis para resolução.
 - Layout responsivo: referência de 1366×768 no desktop e 390×844 no celular.
 
@@ -175,7 +176,7 @@ O primeiro cobre seed local, conflitos, resolução, propagação, geração, ch
 - Teste interno Android: https://play.google.com/apps/internaltest/4701590393471812455
 - Repositório: https://github.com/wavizo-bot/Cadernodecuidado
 
-**Situação dos envios:** o MSIX `1.25.17.0` está compilado, assinado e verificado em `entregas/windows/`; o último envio à Microsoft Store foi `1.25.7.0`, portanto a loja só exibirá a versão atual depois do envio e da análise. O AAB `1.27.11` / `vC12` está pronto em `entregas/play/`; os envios anteriores (vC10 e vC11) não foram confirmados, e o `vC12` pode ser enviado sobre eles de qualquer forma (versionCode maior). A landing e este README mostram a versão do artefato desta entrega, não uma promessa de disponibilidade imediata na loja.
+**Situação dos envios:** o MSIX `1.25.17.0` foi enviado ao Partner Center em 06/11/2026 e está em análise na Store. O MSIX `1.25.18.0` desta entrega está compilado, assinado e verificado em `entregas/windows/`, aguardando envio. Na Play, o AAB `1.27.11`/`vC12` foi enviado em 06/11/2026; o `vC13` (`1.27.12`) desta entrega está pronto em `entregas/play/` para o próximo envio (versionCode maior). A landing e este README mostram a versão do artefato desta entrega, não uma promessa de disponibilidade imediata na loja.
 
 ## Limitações conhecidas e impedimentos
 
@@ -193,4 +194,4 @@ O primeiro cobre seed local, conflitos, resolução, propagação, geração, ch
 
 ## English summary
 
-Caderno de Cuidado is an offline-first care agenda for primary-care teams following pregnant women and children under two. It records visits and outcomes, calculates the next care milestone from the last attended visit (with a ±4-day tolerance), and highlights decisions that need a human response. One day can hold only one event — attended, missed, or cancelled — and missed/cancelled visits do not consume the ideal milestone. Data stays on the device by default; optional Google Drive backup uses the hidden `drive.appdata` folder, with one operations file per device, tombstones for deletions, and conflicts shown to the user instead of being overwritten. It is a decision-support tool, not a medical device, official record, or substitute for professional judgement. Windows is distributed through the Microsoft Store; the Android build is currently in internal testing; the web build is available as a PWA.
+Caderno de Cuidado is an offline-first care agenda for primary-care teams following pregnant women and children under two. It records visits and outcomes, calculates the next care milestone from the last attended visit (with a ±4-day tolerance), and highlights decisions that need a human response. One day can hold only one event — attended, missed, or cancelled — and missed/cancelled visits do not consume the ideal milestone. Data stays on the device by default; optional Google Drive backup uses the hidden `drive.appdata` folder, with one operations file per device, tombstones for deletions, and conflicts shown to the user instead of being overwritten. It is a decision-support tool, not a medical device, official record, or substitute for professional judgement. A three-step first-run tour can seed eight fictional demo records for evaluation, and the sidebar stays fixed on wide screens. Windows is distributed through the Microsoft Store; the Android build is currently in internal testing; the web build is available as a PWA.

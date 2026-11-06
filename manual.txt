@@ -18,11 +18,11 @@ protocolo de urgência ou substituto da decisão de um profissional habilitado.
 
 | Item | Versão | Situação |
 |---|---|---|
-| Windows/web | 1.25.17 | MSIX 1.25.17.0 compilado, assinado e conferido |
-| Android | 1.27.11 | versionCode 12 (vC12), AAB/APK gerados e conferidos |
-| Landing/docs/app | 1.25.17 | landing e build web atualizados |
-| Último MSIX enviado à Store | 1.25.7.0 | 1.25.17.0 ainda não enviado |
-| Último AAB enviado à Play | vC8 (1.27.7, em envio) | vC10 e vC11 não confirmados; vC12 é o próximo número e pode ser enviado |
+| Windows/web | 1.25.18 | MSIX 1.25.18.0 compilado, assinado e conferido |
+| Android | 1.27.12 | versionCode 13 (vC13), AAB/APK gerados e conferidos |
+| Landing/docs/app | 1.25.18 | landing e build web atualizados |
+| Último MSIX enviado à Store | 1.25.17.0 (06/11/2026) | 1.25.18.0 pronto e aguardando envio |
+| Último AAB enviado à Play | vC12 (1.27.11, 06/11/2026) | vC13 (1.27.12) é o próximo número e pode ser enviado |
 
 Regra de versão: nunca reutilizar um número já enviado à Store/Play. Um envio
 rejeitado também queima o número. O MSIX e o AAB finais devem ser gerados de
@@ -180,6 +180,29 @@ Como o app usa a regra:
 - Barra lateral: fundo com "doodles" ilustrados (gestantes e bebês),
   discreto em todas as paletas.
 
+### Tela de primeiro uso e ajustes visuais (1.25.18 / 1.27.12)
+
+- Primeiro acesso: o app abre uma tela de boas-vindas em três passos
+  (boas-vindas, como funciona, dados sensíveis). No fim, a equipe escolhe
+  entre "Explorar com dados de exemplo" (8 fichas fictícias: 4 gestantes e
+  4 bebês, datas relativas ao dia atual, notes e consultas de demonstração)
+  ou "Começar vazio". A escolha é salva só no dispositivo (chave
+  caderno-cuidado-onboarding-v1; nunca viaja na sincronização). Usar
+  "Iniciar novo caderno" limpa todas as chaves locais e a tela volta a
+  aparecer na próxima abertura.
+- A tela de termos (v1.1) continua bloqueante e vem antes; o onboarding
+  só aparece após o aceite, quando o caderno ainda está vazio.
+- Barra lateral fixa: em janelas de 861px ou mais de largura, a barra fica
+  parada no topo enquanto o conteúdo rola (com rolagem própria, sem barra
+  visível); no celular (860px ou menos) ela continua rolando com a página.
+- Marcos da puericultura: a consulta realizada até 4 dias antes do
+  versário do mesversário agora confirma o marco anterior, igual à regra
+  já aplicada às gestantes. Antes, o app abria uma "recuperação" um mês
+  depois da consulta (caso real: consulta 10/09/2026, versário 18m em
+  13/09; hoje o app marca 18m como cumprido e aponta a próxima consulta
+  para o marco de 21 meses). Registros antigos se corrigem sozinhos ao
+  reabrir o app.
+
 ## 6. Build e release
 
 ### Web/docs
@@ -241,19 +264,18 @@ AAB com `check-artifact.mjs` e copia para `entregas/play/`. Aumente
 - `docs/app/` — build de produção do app web, gerado por
   `tools/build-docs-app.mjs`.
 - Documentos públicos na raiz de `docs/`: política de privacidade, termos de
-  serviço e aviso legal, atualizados em 05/11/2026 para 1.25.17 (Windows/web) e
-  1.27.11 (Android). Contato: mmr05@hotmail.com / 11978831938.
+  serviço e aviso legal, atualizados em 06/11/2026 para 1.25.18 (Windows/web) e
+  1.27.12 (Android). Contato: mmr05@hotmail.com / 11978831938.
 - `README.md` — visão geral, recursos, privacidade, requisitos, execução,
   builds, estrutura, versão, links e resumo em inglês.
 
 ## 9. Pendências e impedimentos
 
-- Enviar o MSIX 1.25.17.0 ao Partner Center (último enviado: 1.25.7.0) e
-  confirmar a análise. A Store reassina o pacote; o certificado de teste local
-  não é o da loja.
-- Enviar o AAB 1.27.11/vC12 ao Play Console e confirmar o teste interno (os
-  envios do vC10 e do vC11 não foram confirmados; o vC12 pode ir sobre eles). O link do teste
-  só entrega a build enviada.
+- Confirmar a análise do MSIX 1.25.17.0, enviado ao Partner Center em
+  06/11/2026. Para a rodada atual: enviar o MSIX 1.25.18.0; a Store reassina o
+  pacote e o certificado de teste local não é o da loja.
+- Enviar o AAB 1.27.12/vC13 ao Play Console (o vC12 foi enviado em
+  06/11/2026). O link do teste interno só entrega a build enviada.
 - Resolver as 24 pendências de conflito de edição no aparelho (janela
   "Conflitos de edição"; é decisão do usuário, nunca automática).
 - Testar a instalação Windows com o certificado de teste confiável; neste PC o
