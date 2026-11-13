@@ -8,9 +8,9 @@ Agenda offline para equipes de atenção primária acompanharem gestantes e cria
 
 O Caderno de Cuidado foi pensado para o trabalho real da equipe: quem cadastra mantém a ficha e o contato atualizados; quem decide confere a data sugerida, a vaga e o profissional; quem acompanha vê o histórico, as faltas e o próximo passo. Funciona offline por padrão e pode ser instalado no Windows (MSIX pela Microsoft Store), no Android (AAB/Google Play) e no navegador como PWA.
 
-- **Windows:** `1.25.18` — pacote MSIX `1.25.18.0`.
-- **Web/PWA:** `1.25.18` — build em `docs/app/`.
-- **Android:** `1.27.12` - versionCode `13` (vC13), em teste interno.
+- **Windows:** `1.25.19` — pacote MSIX `1.25.19.0`.
+- **Web/PWA:** `1.25.19` — build em `docs/app/`.
+- **Android:** `1.27.13` - versionCode `14` (vC14), em teste interno.
 
 ## Recursos principais
 
@@ -24,7 +24,8 @@ O Caderno de Cuidado foi pensado para o trabalho real da equipe: quem cadastra m
 - **Ajustes do dia a dia (1.25.17/1.27.11):** duplicidade possível virou aviso com botáo "Salvar mesmo assim" (em vez de bloqueio); DPP deixou de ser obrigatõria — a ficha continua salva sem DUM e sem DPP (o acompanhamento automãtico só aparece quando as datas existem); CNS aceita apenas números; DUM, DPP, parto e última consulta aceitam dia/mês com ano do dispositivo (ou dia/mês/ano); nome, endereço e cadastro ignoram espaços no início; o emblema "Cadastro: NNN" virou botáo que copia apenas o número; a barra lateral ganhou fundo com "doodles" ilustrados no tema (gestantes e bebês).
 - Exportação CSV/JSON, importação de backup e impressão da agenda/expectativas.
 - **Tela de primeiro uso e leitura da página (1.25.18/1.27.12):** o primeiro acesso abre uma apresentação em três passos, com opção de explorar o app com 8 fichas fictícias de exemplo ou começar vazio, links para os documentos legais e nota de privacidade; a escolha fica no dispositivo e reaparece ao usar "Iniciar novo caderno". Em telas de 861px ou mais de largura, a barra lateral fica fixa ao rolar, com rolagem própria discreta; no celular ela continua rolando junto com o conteúdo. O marco do mesversário da puericultura também passa a respeitar a tolerância de ±4 dias já documentada: consulta até 4 dias antes do versário confirma o marco anterior.
-- Sincronização opcional entre Windows e Android pelo Google Drive, com merge por operação, tombstones, versões lógicas e conflitos visíveis para resolução.
+- **Mesclagem automática de conflitos (1.25.19/1.27.13):** edições feitas em aparelhos diferentes na mesma ficha se combinam sozinhas — campo a campo contra a base comum; onde os dois alteraram, vale a versão lógica mais alta com desempate por `opId` (nunca relógio); exclusão vence edição; consultas são unidas por id; nenhuma tela de JSON e nenhuma decisão para a equipe. A resolução fica registrada no histórico (auditoria) e a tela manual só reaparece no caso raro de dado que o app não consegue mesclar. Aparelhos em versões antigas continuam funcionando: eles adotam a resolução que chega da nuvem.
+- Sincronização opcional entre Windows e Android pelo Google Drive, com merge por operação, tombstones, versões lógicas e, desde 1.25.19/1.27.13, mesclagem automática de edições concorrentes (a tela manual de conflitos ficou só para o caso raro em que a mesclagem não conclui).
 - Layout responsivo: referência de 1366×768 no desktop e 390×844 no celular.
 
 ### Regra de agenda em resumo
@@ -36,7 +37,7 @@ A próxima data é o marco seguinte depois da última consulta realizada. Se a c
 - **Offline por padrão.** Fichas, consultas, configurações e histórico ficam no armazenamento local do dispositivo/navegador. Sem login, nenhum dado sai do aparelho.
 - **Sem servidor próprio.** Não há backend, anúncios, analytics ou rastreadores. O app não pede localização, câmera, microfone ou contatos.
 - **Google Drive opcional.** Quando o usuário ativa a integração, o app usa o escopo `drive.appdata` e grava arquivos de backup na pasta oculta reservada a ele no **próprio** Drive do usuário. Cada dispositivo mantém um arquivo de operações (`caderno-ops-<deviceId>.json`); versões antigas com `caderno-backup.json` continuam legíveis para migração.
-- **Conflitos preservados.** Exclusões usam tombstones (`del`); edições concorrentes não são sobrescritas silenciosamente. O app mostra as versões e pede uma resolução explícita.
+- **Conflitos resolvidos automaticamente.** Exclusões usam tombstones (`del`) e edições concorrentes não são sobrescritas silenciosamente: desde 1.25.19/1.27.13 o app combina as versões sozinho, campo a campo contra a base comum (desempate por versão lógica e `opId`, nunca relógio), e registra a resolução no histórico; só em caso raro o app mostra os conflitos e pede uma resolução explícita.
 - **Tokens protegidos.** No Windows, o token fica sob DPAPI; no Android, sob Android Keystore. “Sair do Google” remove o token do aparelho; a cópia já enviada permanece no Drive até o usuário apagá-la.
 - **LGPD/GDPR.** O usuário pode consultar, corrigir e excluir dados no app, revogar o acesso Google em `myaccount.google.com/permissions` e falar com o fornecedor pelo contato abaixo. A política completa descreve retenção, compartilhamento e direitos.
 
@@ -116,7 +117,7 @@ Pré-requisitos: JDK 21, Android SDK 36, Gradle 8.13, `keystore.properties` + ke
 powershell -ExecutionPolicy Bypass -File android\Build-Android.ps1
 ```
 
-O script executa `npm run stage`, `cap sync`, `bundleRelease`, `assembleRelease`, confere o AAB com `android/scripts/check-artifact.mjs` (R8, 18 assets web incluindo `sw.js`, versão, UTF-8) e copia o AAB/APK para `entregas/play/`. A versão fica em `android/package.json`; o versionCode, em `android/version-code.txt`. **Aumente os dois antes de cada envio à Play.** O AAB atual é `1.27.11` / `vC12`; os builds anteriores `1.27.10` / `vC11` e `1.27.9` / `vC10` (login nativo) vão para `entregas/play/historico`.
+O script executa `npm run stage`, `cap sync`, `bundleRelease`, `assembleRelease`, confere o AAB com `android/scripts/check-artifact.mjs` (R8, 18 assets web incluindo `sw.js`, versão, UTF-8) e copia o AAB/APK para `entregas/play/`. A versão fica em `android/package.json`; o versionCode, em `android/version-code.txt`. **Aumente os dois antes de cada envio à Play.** O AAB atual é `1.27.13` / `vC14`; os builds anteriores `1.27.12` / `vC13`, `1.27.11` / `vC12`, `1.27.10` / `vC11` e `1.27.9` / `vC10` (login nativo) vão para `entregas/play/historico`.
 
 O login Android é SOMENTE a janela nativa do Google (Play Services, `AuthorizationActivity`): o app abre o seletor "Escolha uma conta" com o ícone do Caderno, o usuário escolhe/atualiza a permissão do Drive e a janela fecha. A janela pertence ao app/Play Services e pode ser fechada a qualquer momento pelo usuário. Não existe Custom Tab, navegador do sistema, `LoginWindow` nem WebView embutida de login (regra A8). O resultado da `AuthorizationActivity` chega ao app porque o `MainActivity` repassa `onActivityResult` ao plugin (o Bridge do Capacitor 7 só repassa requestCodes do mecanismo legado); sem isso o resultado se perdia após o seletor fechar. O client Android do projeto Google `cadernodecuidado` precisa estar registrado com o SHA-1 da assinatura instalada (upload `81:05…` para sideload e Play App Signing `FF:D2…` para a loja).
 
@@ -127,7 +128,7 @@ node tests/sync-core.test.mjs
 node android/scripts/check-artifact.mjs caminho/para/app-release.aab
 ```
 
-O primeiro cobre seed local, conflitos, resolução, propagação, geração, checksum, migração v1, arquivos por dispositivo e merge nos dois sentidos (13 casos). O segundo valida o AAB final, não apenas o fonte.
+O primeiro cobre seed local, mesclagem automática de conflitos, resolução manual (fallback), propagação, convergência entre ramificações, geração, checksum, migração v1, arquivos por dispositivo e merge nos dois sentidos (13 casos). O segundo valida o AAB final, não apenas o fonte.
 
 ## Estrutura de pastas
 
@@ -176,7 +177,7 @@ O primeiro cobre seed local, conflitos, resolução, propagação, geração, ch
 - Teste interno Android: https://play.google.com/apps/internaltest/4701590393471812455
 - Repositório: https://github.com/wavizo-bot/Cadernodecuidado
 
-**Situação dos envios:** o MSIX `1.25.17.0` foi enviado ao Partner Center em 06/11/2026 e está em análise na Store. O MSIX `1.25.18.0` desta entrega está compilado, assinado e verificado em `entregas/windows/`, aguardando envio. Na Play, o AAB `1.27.11`/`vC12` foi enviado em 06/11/2026; o `vC13` (`1.27.12`) desta entrega está pronto em `entregas/play/` para o próximo envio (versionCode maior). A landing e este README mostram a versão do artefato desta entrega, não uma promessa de disponibilidade imediata na loja.
+**Situação dos envios:** o MSIX `1.25.17.0` foi enviado ao Partner Center em 06/11/2026; o MSIX `1.25.18.0` da rodada anterior ficou pronto e não chegou a ser enviado, e esta entrega segue direto com o MSIX `1.25.19.0`, compilado, assinado e verificado em `entregas/windows/`, aguardando envio (número maior que o último enviado evita reuso). Na Play, o último AAB enviado foi o `vC12` (`1.27.11`) em 06/11/2026; o `vC13` (`1.27.12`) da rodada anterior também não foi enviado, e o `vC14` (`1.27.13`) desta entrega está pronto em `entregas/play/` para o próximo envio (versionCode maior). A landing e este README mostram a versão do artefato desta entrega, não uma promessa de disponibilidade imediata na loja.
 
 ## Limitações conhecidas e impedimentos
 
@@ -194,4 +195,4 @@ O primeiro cobre seed local, conflitos, resolução, propagação, geração, ch
 
 ## English summary
 
-Caderno de Cuidado is an offline-first care agenda for primary-care teams following pregnant women and children under two. It records visits and outcomes, calculates the next care milestone from the last attended visit (with a ±4-day tolerance), and highlights decisions that need a human response. One day can hold only one event — attended, missed, or cancelled — and missed/cancelled visits do not consume the ideal milestone. Data stays on the device by default; optional Google Drive backup uses the hidden `drive.appdata` folder, with one operations file per device, tombstones for deletions, and conflicts shown to the user instead of being overwritten. It is a decision-support tool, not a medical device, official record, or substitute for professional judgement. A three-step first-run tour can seed eight fictional demo records for evaluation, and the sidebar stays fixed on wide screens. Windows is distributed through the Microsoft Store; the Android build is currently in internal testing; the web build is available as a PWA.
+Caderno de Cuidado is an offline-first care agenda for primary-care teams following pregnant women and children under two. It records visits and outcomes, calculates the next care milestone from the last attended visit (with a ±4-day tolerance), and highlights decisions that need a human response. One day can hold only one event — attended, missed, or cancelled — and missed/cancelled visits do not consume the ideal milestone. Data stays on the device by default; optional Google Drive backup uses the hidden `drive.appdata` folder, with one operations file per device, tombstones for deletions, and concurrent edits merged automatically, with a manual conflict screen kept only as a rare fallback. It is a decision-support tool, not a medical device, official record, or substitute for professional judgement. A three-step first-run tour can seed eight fictional demo records for evaluation, and the sidebar stays fixed on wide screens. Windows is distributed through the Microsoft Store; the Android build is currently in internal testing; the web build is available as a PWA.

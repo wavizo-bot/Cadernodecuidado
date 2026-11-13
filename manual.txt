@@ -1,5 +1,5 @@
 # CADERNO DE CUIDADO — MANUAL DO PROJETO
-# Atualizado em 05/11/2026
+# Atualizado em 12/11/2026
 
 ## 1. O que é
 
@@ -18,11 +18,11 @@ protocolo de urgência ou substituto da decisão de um profissional habilitado.
 
 | Item | Versão | Situação |
 |---|---|---|
-| Windows/web | 1.25.18 | MSIX 1.25.18.0 compilado, assinado e conferido |
-| Android | 1.27.12 | versionCode 13 (vC13), AAB/APK gerados e conferidos |
-| Landing/docs/app | 1.25.18 | landing e build web atualizados |
-| Último MSIX enviado à Store | 1.25.17.0 (06/11/2026) | 1.25.18.0 pronto e aguardando envio |
-| Último AAB enviado à Play | vC12 (1.27.11, 06/11/2026) | vC13 (1.27.12) é o próximo número e pode ser enviado |
+| Windows/web | 1.25.19 | MSIX 1.25.19.0 compilado, assinado e conferido |
+| Android | 1.27.13 | versionCode 14 (vC14), AAB/APK gerados e conferidos |
+| Landing/docs/app | 1.25.19 | landing e build web atualizados |
+| Último MSIX enviado à Store | 1.25.17.0 (06/11/2026) | 1.25.19.0 pronto e aguardando envio; o 1.25.18.0 ficou pronto e não foi enviado |
+| Último AAB enviado à Play | vC12 (1.27.11, 06/11/2026) | vC14 (1.27.13) é a entrega atual; o vC13 (1.27.12) ficou pronto e não foi enviado |
 
 Regra de versão: nunca reutilizar um número já enviado à Store/Play. Um envio
 rejeitado também queima o número. O MSIX e o AAB finais devem ser gerados de
@@ -105,9 +105,17 @@ Regras:
 
 - exclusões usam tombstones (`type: "del"`), nunca remoção silenciosa;
 - `recompute()` reconstrói heads e conflitos a partir das operações;
-- duas edições concorrentes preservam as duas versões e geram conflito;
-- a resolução escolhe uma versão, grava `resolves` e é propagada;
-- uma terceira ramificação continua em conflito e recebe nova cabeça;
+- edições concorrentes são MESCLADAS automaticamente (1.25.19): campo a
+  campo contra a base comum; onde só um lado alterou, vale o que alterou;
+  onde os dois alteraram, vale o de `version` (Lamport) maior, com `opId`
+  como desempate — nunca relógio; exclusão vence edição; consultas com id
+  são unidas; remover item de consulta vale como exclusão;
+- a resolução automática grava uma operação com `resolves: [local, remoto]`
+  e o histórico continua completo para auditoria;
+- sem base comum (aparelhos que nunca sincronizaram), um lado inteiro vence
+  por `opId` e o outro lado segue preservado no histórico;
+- uma terceira ramificação é incorporada na rodada seguinte, sempre contra
+  a cabeça atual;
 - geração maior bloqueia poll/merge até decisão explícita do usuário;
 - o checksum é calculado sobre o estado canônico; payload adulterado é rejeitado;
 - não há escolha por relógio, tamanho de arquivo ou “mais recente” automático;
@@ -203,6 +211,28 @@ Como o app usa a regra:
   para o marco de 21 meses). Registros antigos se corrigem sozinhos ao
   reabrir o app.
 
+### Mesclagem automática de conflitos (1.25.19 / 1.27.13)
+
+- Edições concorrentes na mesma ficha são combinadas sem intervenção humana:
+  mesclagem campo a campo contra a base comum (o ancestral comum das duas
+  operações, encontrado no histórico); campo alterado por um só lado entra;
+  campo alterado pelos dois fica com a `version` (Lamport) maior, com
+  desempate lexicográfico por `opId` — nunca por relógio.
+- Exclusão vence edição (tombstone). Consultas são unidas por `id`; remover um
+  item de consulta vale como exclusão do item. Campos novos (ausentes na
+  base) criados por qualquer lado são sempre preservados.
+- A resolução vira uma operação nova com `resolves: [opIdLocal, opIdRemoto]`
+  e o histórico completo permanece para auditoria; o conteúdo da versão
+  perdedora segue recuperável pelo histórico.
+- Sem ancestral comum (aparelhos que nunca sincronizaram), um lado inteiro
+  vence por `opId` e o outro segue preservado no histórico.
+- A tela "Conflitos de edição" só aparece no caso raro em que a mesclagem
+  não consegue concluir (dado que não é mesclável). Aparelhos em versões
+  antigas adotam a resolução que chega da nuvem e convergem.
+- Mescla concluída no arranque: o app recarrega sozinho (~1,2 s) para
+  montar já com o resultado; em sincronização de fundo, o recarregamento
+  espera 30 s de inatividade do usuário.
+
 ## 6. Build e release
 
 ### Web/docs
@@ -242,9 +272,9 @@ AAB com `check-artifact.mjs` e copia para `entregas/play/`. Aumente
 
 ## 7. Testes e verificações
 
-- `node tests/sync-core.test.mjs` — 13/13 casos: seed, conflitos, resolução,
-  propagação, geração, checksum, migração v1, arquivos por dispositivo, merge
-  bidirecional.
+- `node tests/sync-core.test.mjs` — 13/13 casos: seed, mesclagem automática de
+  conflitos, resolução manual (fallback), propagação, convergência, geração,
+  checksum, migração v1, arquivos por dispositivo, merge bidirecional.
 - `node android/scripts/check-artifact.mjs <aab>` — manifesto, R8, assets,
   versão e encoding do AAB final.
 - Conferência local da landing em 1366×768 e 390×844: sem overflow horizontal,
@@ -264,20 +294,24 @@ AAB com `check-artifact.mjs` e copia para `entregas/play/`. Aumente
 - `docs/app/` — build de produção do app web, gerado por
   `tools/build-docs-app.mjs`.
 - Documentos públicos na raiz de `docs/`: política de privacidade, termos de
-  serviço e aviso legal, atualizados em 06/11/2026 para 1.25.18 (Windows/web) e
-  1.27.12 (Android). Contato: mmr05@hotmail.com / 11978831938.
+  serviço e aviso legal, atualizados em 12/11/2026 para 1.25.19 (Windows/web) e
+  1.27.13 (Android). Contato: mmr05@hotmail.com / 11978831938.
 - `README.md` — visão geral, recursos, privacidade, requisitos, execução,
   builds, estrutura, versão, links e resumo em inglês.
 
 ## 9. Pendências e impedimentos
 
-- Confirmar a análise do MSIX 1.25.17.0, enviado ao Partner Center em
-  06/11/2026. Para a rodada atual: enviar o MSIX 1.25.18.0; a Store reassina o
-  pacote e o certificado de teste local não é o da loja.
-- Enviar o AAB 1.27.12/vC13 ao Play Console (o vC12 foi enviado em
+- Confirmar a análise do MSIX 1.25.17.0 no Partner Center (enviado em
+  06/11/2026).
+- Enviar o MSIX 1.25.19.0 ao Partner Center (o 1.25.18.0 da rodada anterior
+  ficou pronto e não chegou a ser enviado; número maior evita reuso). A
+  Store reassina o pacote e o certificado de teste local não é o da loja.
+- Enviar o AAB 1.27.13/vC14 ao Play Console (o vC13/1.27.12 da rodada
+  anterior também não foi enviado; o último enviado foi o vC12/1.27.11 em
   06/11/2026). O link do teste interno só entrega a build enviada.
-- Resolver as 24 pendências de conflito de edição no aparelho (janela
-  "Conflitos de edição"; é decisão do usuário, nunca automática).
+- Os 24 conflitos de edição pendentes no aparelho são mesclados
+  automaticamente na primeira abertura do 1.25.19, sem decisão humana; a
+  tela manual só reaparece no caso raro de dado que a mesclagem não conclui.
 - Testar a instalação Windows com o certificado de teste confiável; neste PC o
   sideload pode falhar com `0x800B0109` sem confiança administrativa.
 - GitHub Pages habilitado e verificado em `main` / `/docs` (29/10/2026):

@@ -1,5 +1,5 @@
 /* Caderno de Cuidado — service worker (cache-first offline) */
-const CACHE = "caderno-cuidado-v6";
+const CACHE = "caderno-cuidado-v7";
 const SHELL = [
   "./",
   "./index.html",

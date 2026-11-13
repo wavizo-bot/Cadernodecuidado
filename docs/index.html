@@ -38,7 +38,7 @@
   "name": "Caderno de Cuidado",
   "applicationCategory": "HealthApplication",
   "operatingSystem": "Windows 10, Windows 11, Android",
-  "softwareVersion": "1.25.15",
+  "softwareVersion": "1.25.19",
   "inLanguage": "pt-BR",
   "description": "Agenda offline para equipes de saúde acompanharem gestantes e bebês, com cálculo do próximo marco de cuidado e backup opcional no Google Drive.",
   "url": "https://wavizo-bot.github.io/Cadernodecuidado/",
@@ -153,7 +153,7 @@
             <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 8v4l3 3"/><circle cx="12" cy="12" r="9"/></svg><span>Registro de consulta realizada, falta ou cancelamento, sem duplicar o dia.</span></li>
             <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M10.3 3.9L1.8 18a2 2 0 001.7 3h17a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"/><path d="M12 9v4M12 17h.01"/></svg><span>Pendências de decisão, avisos próximos e conferências de presença.</span></li>
             <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><path d="M7 10l5 5 5-5M12 15V3"/></svg><span>Exportação CSV/JSON e impressão da agenda e das expectativas.</span></li>
-            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M18 10h-1.3A7 7 0 104 13.8"/><path d="M8 14h8M8 18h5"/><path d="M17 14l4 4-4 4"/></svg><span>Backup opcional no Google Drive, com merge por operação e conflitos visíveis.</span></li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M18 10h-1.3A7 7 0 104 13.8"/><path d="M8 14h8M8 18h5"/><path d="M17 14l4 4-4 4"/></svg><span>Backup opcional no Google Drive, com merge por operação e mesclagem automática de edições concorrentes.</span></li>
           </ul>
         </article>
       </div>
@@ -319,7 +319,7 @@
           <h3>Google Play · testadores</h3>
           <ul>
             <li>Android 7.0 ou superior (minSdk 24).</li>
-            <li>Build desta entrega: 1.27.7 (versionCode 8), para o teste interno.</li>
+            <li>Build desta entrega: 1.27.13 (versionCode 14), para o teste interno.</li>
             <li>O link é para contas convidadas; a publicação pública depende da revisão do Google Play.</li>
           </ul>
           <p><a class="btn btn-secondary" href="https://play.google.com/apps/internaltest/4701590393471812455" target="_blank" rel="noopener">Entrar no teste interno</a></p>
@@ -337,11 +337,11 @@
       </div>
       <div class="limits">
         <div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9L1.8 18a2 2 0 001.7 3h17a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"/></svg><span>O armazenamento local tem limite do navegador/aparelho. Exporte CSV/JSON com frequência.</span></div>
-        <div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l3 3"/></svg><span>A sincronização não é em tempo real: cada dispositivo envia operações e conflitos ficam visíveis para decisão.</span></div>
+        <div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l3 3"/></svg><span>A sincronização não é em tempo real: cada dispositivo envia operações e o app mescla sozinho as edições concorrentes.</span></div>
         <div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M8 21h8M12 18v3"/></svg><span>Funções nativas (impressão, downloads e login Google) dependem do host Windows/Android; no navegador podem variar.</span></div>
         <div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/></svg><span>Layout a partir de 390 px; no desktop, 1366×768 é a referência confortável. Tablets e telas grandes usam o layout completo.</span></div>
         <div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M18.36 6.64A9 9 0 115.64 6.64"/><path d="M12 2v10"/></svg><span>Sem internet, o backup no Drive não funciona; o app e os dados locais continuam disponíveis.</span></div>
-        <div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg><span>Não há edição simultânea de várias pessoas na mesma ficha sem conflito; o app preserva as versões e pede resolução.</span></div>
+        <div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg><span>Edições simultâneas na mesma ficha são combinadas automaticamente — campo a campo, desempate por versão lógica, exclusão vence — e o histórico fica guardado para auditoria.</span></div>
       </div>
     </div>
   </section>
@@ -445,7 +445,7 @@
         </details>
         <details>
           <summary>Como funciona a sincronização entre Windows e Android?</summary>
-          <div class="answer"><p>Quando você ativa o Google Drive, cada dispositivo grava um arquivo de operações na pasta oculta do app. Ao sincronizar, o app baixa todos os arquivos válidos, aplica as operações e mostra conflitos para resolução. Não há sobrescrita silenciosa: exclusões usam tombstones e versões preservadas.</p></div>
+          <div class="answer"><p>Quando você ativa o Google Drive, cada dispositivo grava um arquivo de operações na pasta oculta do app. Ao sincronizar, o app baixa todos os arquivos válidos, aplica as operações e mescla sozinho as edições concorrentes (a tela de conflitos só reaparece em caso raro). Não há sobrescrita silenciosa: exclusões usam tombstones e o histórico registra tudo.</p></div>
         </details>
         <details>
           <summary>O que acontece se eu desinstalar o app ou limpar o navegador?</summary>
@@ -457,11 +457,11 @@
         </details>
         <details>
           <summary>Como entro no teste do Android?</summary>
-          <div class="answer"><p>Use o <a href="https://play.google.com/apps/internaltest/4701590393471812455" target="_blank" rel="noopener">link do teste interno</a> com a conta Google convidada. O build desta entrega é 1.27.7 (versionCode 8); a disponibilidade no link depende do envio estar publicado no Play Console. A publicação pública depende da revisão do Google Play.</p></div>
+          <div class="answer"><p>Use o <a href="https://play.google.com/apps/internaltest/4701590393471812455" target="_blank" rel="noopener">link do teste interno</a> com a conta Google convidada. O build desta entrega é 1.27.13 (versionCode 14); a disponibilidade no link depende do envio estar publicado no Play Console. A publicação pública depende da revisão do Google Play.</p></div>
         </details>
         <details>
           <summary>Onde vejo a versão publicada?</summary>
-          <div class="answer"><p>No rodapé desta landing, no aplicativo (menu lateral ou modal de sincronização) e no README do repositório. A versão do pacote web e do Windows é 1.25.15; o Android desta entrega é 1.27.7 (vC8).</p></div>
+          <div class="answer"><p>No rodapé desta landing, no aplicativo (menu lateral ou modal de sincronização) e no README do repositório. A versão do pacote web e do Windows é 1.25.19; o Android desta entrega é 1.27.13 (vC14).</p></div>
         </details>
       </div>
     </div>
@@ -509,9 +509,9 @@
     </div>
     <div class="footer-bottom">
       <div class="versions">
-        <span><strong>Versão do pacote:</strong> 1.25.15</span>
-        <span>Windows 1.25.15.0</span>
-        <span>Android 1.27.7 (vC8, teste interno)</span>
+        <span><strong>Versão do pacote:</strong> 1.25.19</span>
+        <span>Windows 1.25.19.0</span>
+        <span>Android 1.27.13 (vC14, teste interno)</span>
       </div>
       <div class="contact-line">
         <span><a href="mailto:mmr05@hotmail.com">mmr05@hotmail.com</a> · <a href="tel:+5511978831938">11978831938</a></span>

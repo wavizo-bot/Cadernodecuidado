@@ -104,34 +104,39 @@ await test('semente local vira operacao e nao duplica', () => {
   assert.equal(A.model.ops.length, 1);
 });
 
-await test('duas edicoes concorrentes criam conflito preservando as duas', () => {
-  const A = makeDevice('devA', [{ id: 'a', name: 'Ana' }], {});
-  const localSeed = A.model.heads.a;
-  const remote = op('devB', 'a', { id: 'a', name: 'Ana (B)' }, 1, 0, null, 'opB');
-  const res = A.applyRemoteOps([remote]);
-  assert.equal(res.conflicts, 1);
-  assert.equal(A.model.conflicts.length, 1);
-  const c = A.model.conflicts[0];
-  assert.equal(c.docId, 'a');
-  assert.ok([c.local.opId, c.remote.opId].includes(localSeed.opId));
-  // O estado materializado continua sendo uma das versoes (nunca some).
-  const reg = JSON.parse(A.rawGet(A.REG_KEY));
-  assert.equal(reg.length, 1);
-  assert.ok(reg[0].name === 'Ana' || reg[0].name === 'Ana (B)');
+await test('duas edicoes concorrentes sao mescladas automaticamente (base comum)', () => {
+  const A = makeDevice('devA', [{ id: 'a', name: 'Ana', phone: '1', note: '' }], {});
+  const B = makeDevice('devB', [{ id: 'a', name: 'Ana', phone: '1', note: '' }], {});
+  const seedId = A.model.heads.a.opId;
+  A.rawSet(A.REG_KEY, JSON.stringify([{ id: 'a', name: 'Ana', phone: '2', note: '' }]));
+  A.flushLocal();
+  B.rawSet(B.REG_KEY, JSON.stringify([{ id: 'a', name: 'Ana B', phone: '1', note: '' }]));
+  B.flushLocal();
+  const opB = B.model.ops.find((o) => o.opId !== seedId);
+  const res = A.applyRemoteOps([opB]);
+  assert.equal(res.conflicts, 0, 'mesclagem automatica encerra o conflito');
+  assert.equal(A.model.conflicts.length, 0);
+  const resOp = A.model.ops.find((o) => o.resolves && o.resolves.length === 2);
+  assert.ok(resOp, 'resolucao registrada com resolves (auditoria)');
+  assert.equal(A.model.heads.a.data.phone, '2', 'edicao local preservada');
+  assert.equal(A.model.heads.a.data.name, 'Ana B', 'edicao remota preservada');
+  assert.equal(JSON.parse(A.rawGet(A.REG_KEY))[0].name, 'Ana B');
 });
 
-await test('resolucao escolhe a outra versao e encerra o conflito', () => {
-  const B = makeDevice('devB', [{ id: 'a', name: 'Ana (B)' }], {});
-  const remote = Object.assign({}, B.model.heads.a, {
-    docId: 'a', type: 'put', baseVersion: 0, baseOpId: null,
-    createdAt: new Date(0).toISOString()
-  });
-  const A = makeDevice('devA', [{ id: 'a', name: 'Ana' }], {});
+await test('conflito insolavel fica para decisao manual e a resolucao encerra', () => {
+  const A = makeDevice('devA', [], {});
+  A.model.ops = [];
+  A.model.heads = {};
+  A.model.conflicts = [];
+  A.model.ops.push(op('devA', 'doc1', 'texto local', 1, 0, null, 'seedLocal'));
+  A.recompute();
+  const remote = op('devB', 'doc1', 'texto remoto', 1, 0, null, 'opRemoto');
   A.applyRemoteOps([remote]);
+  assert.equal(A.model.conflicts.length, 1, 'escalares distintos nao tem mesclagem automatica');
   const conf = A.model.conflicts[0];
   const chosen = conf.remote;
   const resolution = {
-    opId: 'resolve1', deviceId: 'devA', docId: 'a', type: 'put',
+    opId: 'resolve1', deviceId: 'devA', docId: 'doc1', type: 'put',
     baseVersion: Math.max(conf.local.version, conf.remote.version),
     baseOpId: conf.local.opId, resolves: [conf.local.opId, conf.remote.opId],
     version: 5, data: chosen.data, createdAt: new Date(0).toISOString()
@@ -140,33 +145,29 @@ await test('resolucao escolhe a outra versao e encerra o conflito', () => {
   A.recompute();
   A.materialize();
   assert.equal(A.model.conflicts.length, 0);
-  assert.deepEqual(A.model.heads.a.data, chosen.data);
-  assert.equal(JSON.parse(A.rawGet(A.REG_KEY))[0].name, chosen.data.name);
+  assert.equal(A.model.heads.doc1.data, chosen.data);
 });
 
-await test('resolucao se propaga para o outro aparelho sem reabrir conflito', () => {
-  const B = makeDevice('devB', [{ id: 'a', name: 'Ana (B)' }], {});
-  const bSeed = B.model.heads.a;
-  const remote = Object.assign({}, bSeed, {
+await test('sem base comum um lado vence inteiro e a resolucao converge os aparelhos', () => {
+  const B = makeDevice('devB', [{ id: 'a', name: 'Ana (B)', phone: '2' }], {});
+  const remote = Object.assign({}, B.model.heads.a, {
     docId: 'a', type: 'put', baseVersion: 0, baseOpId: null,
     createdAt: new Date(0).toISOString()
   });
-  const A = makeDevice('devA', [{ id: 'a', name: 'Ana' }], {});
-  const aSeed = A.model.heads.a;
+  const A = makeDevice('devA', [{ id: 'a', name: 'Ana', phone: '1' }], {});
   A.applyRemoteOps([remote]);
-  const conf = A.model.conflicts[0];
-  const resolution = {
-    opId: 'resolve1', deviceId: 'devA', docId: 'a', type: 'put',
-    baseVersion: Math.max(conf.local.version, conf.remote.version),
-    baseOpId: conf.local.opId, resolves: [conf.local.opId, conf.remote.opId],
-    version: 5, data: conf.remote.data, createdAt: new Date(0).toISOString()
-  };
-  A.model.ops.push(resolution);
-  A.recompute();
-  // B recebe a semente de A e a resolucao (a propria semente ja tem).
-  B.applyRemoteOps(A.model.ops.filter((o) => o.opId !== bSeed.opId));
+  assert.equal(A.model.conflicts.length, 0, 'mesclado sem intervencao');
+  const got = JSON.stringify(A.model.heads.a.data);
+  const dataA = JSON.stringify({ id: 'a', name: 'Ana', phone: '1' });
+  const dataB = JSON.stringify({ id: 'a', name: 'Ana (B)', phone: '2' });
+  assert.ok(got === dataA || got === dataB, 'sem base comum um lado inteiro vence (nunca inventa)');
+  const resOp = A.model.ops.find((o) => o.resolves && o.resolves.length === 2);
+  assert.ok(resOp, 'resolucao registrada');
+  // B recebe a resolucao e converge (nao reabre conflito).
+  B.applyRemoteOps(A.model.ops.filter((o) => o.opId !== B.model.heads.a.opId));
   assert.equal(B.model.conflicts.length, 0, 'B nao pode recriar o conflito');
-  assert.deepEqual(B.model.heads.a.data, conf.remote.data);
+  assert.deepEqual(B.model.heads.a.data, resOp.data);
+  assert.equal(B.model.heads.a.opId, resOp.opId, 'a resolucao vira cabeca nos dois');
 });
 
 await test('geracao maior bloqueia poll e so limpa com decisao explicita', () => {
@@ -241,31 +242,29 @@ await test('operacao local ausente na nuvem marca uploadNeeded', () => {
   assert.ok(ids.some((id) => id.startsWith('seed:a')));
 });
 
-await test('resolver uma dupla nao apaga a terceira ramificacao', () => {
-  const A = makeDevice('devA', [{ id: 'a', name: 'A' }], {});
-  const B = makeDevice('devB', [{ id: 'a', name: 'B' }], {});
-  const C = makeDevice('devC', [{ id: 'a', name: 'C' }], {});
-  const mk = (D) => Object.assign({}, D.model.heads.a, {
-    docId: 'a', type: 'put', baseVersion: 0, baseOpId: null,
-    createdAt: new Date(0).toISOString()
-  });
-  A.applyRemoteOps([mk(B), mk(C)]);
-  assert.equal(A.model.conflicts.length, 2);
-  const first = A.model.conflicts[0];
-  const resolution = {
-    opId: 'resolve1', deviceId: 'devA', docId: 'a', type: 'put',
-    baseVersion: Math.max(first.local.version, first.remote.version),
-    baseOpId: first.local.opId,
-    resolves: [first.local.opId, first.remote.opId],
-    version: 5, data: first.local.data, createdAt: new Date(0).toISOString()
-  };
-  A.model.ops.push(resolution);
-  A.recompute();
-  assert.equal(A.model.conflicts.length, 1, 'a terceira versao continua em conflito');
-  const left = A.model.conflicts[0];
-  assert.equal(left.local.opId, 'resolve1', 'lado em uso acompanha a nova cabeca');
-  assert.notEqual(left.remote.opId, first.local.opId);
-  assert.notEqual(left.remote.opId, first.remote.opId);
+await test('tres ramificacoes com a mesma base convergem sem perder edicao', () => {
+  const mk = () => makeDevice('devX', [{ id: 'a', name: 'Ana', phone: '1', note: '' }], {});
+  const A = mk();
+  const B = mk();
+  const C = mk();
+  const seedId = A.model.heads.a.opId;
+  B.rawSet(B.REG_KEY, JSON.stringify([{ id: 'a', name: 'Ana', phone: '2', note: '' }]));
+  B.flushLocal();
+  C.rawSet(C.REG_KEY, JSON.stringify([{ id: 'a', name: 'Ana', phone: '1', note: 'ok' }]));
+  C.flushLocal();
+  const opB = B.model.ops.find((o) => o.opId !== seedId);
+  const opC = C.model.ops.find((o) => o.opId !== seedId);
+  A.applyRemoteOps([opB, opC]);
+  assert.equal(A.model.conflicts.length, 0, 'tudo resolvido automaticamente');
+  const first = A.model.heads.a.data;
+  assert.equal(first.phone, '2', 'edicao de B preservada');
+  assert.equal(first.note, 'ok', 'edicao de C preservada na segunda rodada');
+  assert.equal(first.name, 'Ana');
+  const A2 = mk();
+  A2.applyRemoteOps([opC, opB]);
+  assert.equal(JSON.stringify(A2.model.heads.a.data), JSON.stringify(first),
+    'ordem de chegada nao muda o resultado');
+  assert.equal(A2.model.conflicts.length, 0);
 });
 
 await test('exclusao concorrente com edicao gera conflito, nao some', () => {
@@ -349,47 +348,35 @@ await test('nuvem por dispositivo: dois arquivos, mesclagem nos dois sentidos', 
   assert.deepEqual(regA.map((r) => r.name).sort(), ['Ana 2', 'Bia 2']);
 });
 
-await test('conflito real na nuvem e resolvido sem perder a outra versao', async () => {
+await test('conflito real na nuvem e mesclado automaticamente (nada se perde)', async () => {
   const cloud = { files: [], clock: 0 };
-  const A = makeDevice('devA', [{ id: 'a', name: 'Ana' }], {});
-  const B = makeDevice('devB', [{ id: 'a', name: 'Ana' }], {});
+  const A = makeDevice('devA', [{ id: 'a', name: 'Ana', phone: '1' }], {});
+  const B = makeDevice('devB', [{ id: 'a', name: 'Ana', phone: '1' }], {});
   attachCloud(A, cloud); attachCloud(B, cloud);
   // Mesma ficha editada nos dois aparelhos, ambos a partir da mesma semente.
-  A.rawSet(A.REG_KEY, JSON.stringify([{ id: 'a', name: 'Ana A' }]));
+  A.rawSet(A.REG_KEY, JSON.stringify([{ id: 'a', name: 'Ana', phone: '2' }]));
   A.flushLocal();
   const pa = await A.buildPayload();
   attachCloud(A, cloud).Backup(JSON.stringify(pa));
-  B.rawSet(B.REG_KEY, JSON.stringify([{ id: 'a', name: 'Ana B' }]));
+  B.rawSet(B.REG_KEY, JSON.stringify([{ id: 'a', name: 'Ana B', phone: '1' }]));
   B.flushLocal();
   const pb = await B.buildPayload();
   attachCloud(B, cloud).Backup(JSON.stringify(pb));
-  // A puxa a versao de B: conflito, nenhuma das duas some.
+  // A puxa a versao de B: a mesclagem automatica preserva as duas edicoes.
   const ra = await A.downloadValid(true);
   A.mergePayloads(ra.payloads, ra.modifiedTime, false, ra.fingerprint, ra.files);
-  assert.equal(A.model.conflicts.length, 1);
-  const conf = A.model.conflicts[0];
-  const names = [conf.local.data.name, conf.remote.data.name].sort();
-  assert.deepEqual(names, ['Ana A', 'Ana B']);
-  // A escolhe explicitamente a versao de B e envia a resolucao.
-  const chosen = [conf.local, conf.remote].find((x) => x.data.name === 'Ana B');
-  assert.ok(chosen);
-  const resolution = {
-    opId: 'res-cloud', deviceId: 'devA', docId: 'a', type: 'put',
-    baseVersion: Math.max(conf.local.version, conf.remote.version),
-    baseOpId: conf.local.opId, resolves: [conf.local.opId, conf.remote.opId],
-    version: (A.meta().lamport || 0) + 1, data: chosen.data,
-    createdAt: new Date(0).toISOString()
-  };
-  A.model.ops.push(resolution);
-  A.recompute(); A.materialize();
-  assert.equal(A.model.conflicts.length, 0);
+  assert.equal(A.model.conflicts.length, 0, 'mesclagem automatica');
+  const merged = A.model.heads.a.data;
+  assert.equal(merged.phone, '2', 'edicao de A preservada');
+  assert.equal(merged.name, 'Ana B', 'edicao de B preservada');
   const pr = await A.buildPayload();
   attachCloud(A, cloud).Backup(JSON.stringify(pr));
-  // B puxa a resolucao e nao recria o conflito.
+  // B puxa a resolucao e converge sem recriar o conflito.
   const rb = await B.downloadValid(true);
   B.mergePayloads(rb.payloads, rb.modifiedTime, false, rb.fingerprint, rb.files);
   assert.equal(B.model.conflicts.length, 0);
-  assert.equal(B.model.heads.a.data.name, 'Ana B');
+  assert.equal(JSON.stringify(B.model.heads.a.data), JSON.stringify(merged),
+    'B converge para o mesmo resultado');
 });
 
 const failed = results.filter((r) => !r.ok);

@@ -21,7 +21,7 @@ code{background:#EEF3EA;padding:.1rem .3rem;border-radius:4px}
 </head>
 <body>
 <h1>Política de Privacidade — Caderno de Cuidado</h1>
-<p class="meta"><strong>Controlador:</strong> wavizo &nbsp;|&nbsp; <strong>Vigência:</strong> 06/11/2026 &nbsp;|&nbsp; <strong>Versões:</strong> Windows 1.25.18 · Android 1.27.12 · web 1.25.18</p>
+<p class="meta"><strong>Controlador:</strong> wavizo &nbsp;|&nbsp; <strong>Vigência:</strong> 12/11/2026 &nbsp;|&nbsp; <strong>Versões:</strong> Windows 1.25.19 · Android 1.27.13 · web 1.25.19</p>
 
 <h2>1. Resumo</h2>
 <p>O <strong>Caderno de Cuidado</strong> é uma agenda de acompanhamento de gestantes e bebês que funciona <strong>offline por padrão</strong>. Sem login, os dados ficam <strong>somente no dispositivo</strong>. Opcionalmente, você pode <strong>entrar com sua conta Google</strong> para manter uma cópia de segurança no <strong>seu próprio Google Drive</strong>. Nós (wavizo) <strong>não operamos servidor próprio, não recebemos, não vendemos e não compartilhamos</strong> os dados com terceiros para publicidade.</p>
@@ -36,7 +36,7 @@ code{background:#EEF3EA;padding:.1rem .3rem;border-radius:4px}
 <li>criar, consultar e atualizar arquivos de backup na <strong>pasta oculta do aplicativo</strong> dentro do <strong>seu</strong> Google Drive, na área <code>drive.appdata</code>, visível apenas para este app.</li>
 </ul>
 <p>A sincronização usa o escopo <code>drive.appdata</code>. Cada dispositivo grava um arquivo de operações próprio (<code>caderno-ops-&lt;deviceId&gt;.json</code>); versões anteriores usavam um único <code>caderno-backup.json</code>, que continua sendo lido para migração. O app não lê os demais arquivos do Drive, não usa o conteúdo para publicidade e não faz perfilamento.</p>
-<p>As operações têm identificador próprio, dispositivo de origem, versão lógica e referência à versão anterior. Exclusões usam marcadores de remoção (<em>tombstones</em>). Quando dois dispositivos alteram o mesmo registro, o app <strong>preserva as versões e mostra o conflito para o usuário resolver</strong>; não há sobrescrita silenciosa.</p>
+<p>As operações têm identificador próprio, dispositivo de origem, versão lógica e referência à versão anterior. Exclusões usam marcadores de remoção (<em>tombstones</em>). Quando dois dispositivos alteram o mesmo registro, o app <strong>mescla as edições automaticamente e registra a resolução no histórico</strong>; só em caso raro mostra o conflito para o usuário resolver; não há sobrescrita silenciosa.</p>
 <p>O token de acesso fica guardado <strong>somente no seu dispositivo</strong>, protegido pelo DPAPI no Windows e pelo Android Keystore no Android. Os dados enviados ao Drive passam a ser tratados também pelo Google, conforme a <a href="https://policies.google.com/privacy">Política de Privacidade do Google</a>.</p>
 <p>Você pode parar a sincronização a qualquer momento em <strong>Sair do Google</strong>, que apaga o token do aparelho. A cópia já enviada permanece no seu Drive até que você a exclua em <a href="https://drive.google.com">drive.google.com</a>.</p>
 
@@ -78,6 +78,6 @@ code{background:#EEF3EA;padding:.1rem .3rem;border-radius:4px}
 <h2>12. Contato</h2>
 <p>Dúvidas sobre privacidade: <a href="mailto:mmr05@hotmail.com">mmr05@hotmail.com</a><br>Telefone/WhatsApp: <a href="tel:+5511978831938">11978831938</a><br>Repositório: <a href="https://github.com/wavizo-bot/Cadernodecuidado">github.com/wavizo-bot/Cadernodecuidado</a></p>
 
-<div class="footer">wavizo — Caderno de Cuidado · Política válida a partir de 06/11/2026 · Versão 1.25.18 (Windows/web) e 1.27.12 (Android)</div>
+<div class="footer">wavizo — Caderno de Cuidado · Política válida a partir de 12/11/2026 · Versão 1.25.19 (Windows/web) e 1.27.13 (Android)</div>
 </body>
 </html>

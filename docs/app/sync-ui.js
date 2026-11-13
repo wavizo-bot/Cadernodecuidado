@@ -5,8 +5,11 @@
      baseVersion, baseOpId e version (contador logico de Lamport);
    - exclusoes viram tombstones (type "del"), nunca desaparecem do historico;
    - a nuvem recebe operacoes (nao um bloco unico carimbado com a hora);
-   - conflito real (mesma base, dispositivos diferentes) NAO e resolvido por
-     relogio: as duas versoes ficam guardadas e o usuario decide;
+   - edicoes concorrentes sao MESCLADAS automaticamente (1.25.19): campo a
+     campo contra a base comum; desempate por version (Lamport) e opId, nunca
+     por relogio; exclusao vence edicao; a resolucao vira operacao "resolves"
+     e o historico fica completo para auditoria. So em caso raro de dado que
+     a mesclagem nao consegue fechar e aberta a tela manual de conflitos;
    - exclusao total e uma acao separada, com dupla confirmacao e geracao da base.
    O host (MSIX/Android) so transporta o payload; a merge acontece aqui. */
 (function () {
@@ -34,7 +37,7 @@
     risk:     'Sem contato com o Drive — HÁ alterações não salvas!',
     empty:    'Nuvem sem backup — enviando os dados deste aparelho',
     pending:  'Conferindo a nuvem...',
-    conflict: 'Conflito — decida qual versão manter'
+    conflict: 'Mesclando edi\u00e7\u00f5es conflitantes'
   };
 
   function rawGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
@@ -113,6 +116,219 @@
     return parseReg(raw).filter(function (r) { return r && r.id; }).length;
   }
 
+/* cc-automerge-b (1.25.19) mesclagem automatica deterministica de conflitos.
+   Regras: campo a campo contra a base comum; so um lado mexeu => vale esse lado;
+   os dois mexeram no mesmo campo => contador logico (Lamport) maior vence, com
+   opId como desempate (nunca relogio); exclusao vence edicao (tombstone);
+   itens com id (consultas) sao unidos; a resolucao vira operacao "resolves"
+   e o historico continua completo para auditoria. */
+function amCanonLoose(v) {
+  if (Array.isArray(v)) {
+    var parts = [], i;
+    for (i = 0; i < v.length; i++) parts.push(amCanonLoose(v[i]));
+    parts.sort();
+    return '[' + parts.join(',') + ']';
+  }
+  if (v && typeof v === 'object') {
+    var o = {}, k, keys = Object.keys(v).sort();
+    for (i = 0; i < keys.length; i++) { k = keys[i]; o[k] = amCanonLoose(v[k]); }
+    return JSON.stringify(o);
+  }
+  return JSON.stringify(v === undefined ? null : v);
+}
+function amEq(a, b) { return amCanonLoose(a) === amCanonLoose(b); }
+function amIdOf(x) {
+  if (!x || typeof x !== 'object') return null;
+  if (typeof x.id === 'string' && x.id) return x.id;
+  var d = x.date || '', p = x.professional || '', k = x.kind || x.status || '';
+  return (d || p || k) ? (d + '|' + p + '|' + k) : null;
+}
+function amChain(o, byId, acc) {
+  var guard = 0, cur = o;
+  while (cur && guard++ < 5000) {
+    acc[cur.opId] = cur;
+    cur = cur.baseOpId ? byId[cur.baseOpId] : null;
+  }
+  return acc;
+}
+function amFindBase(conf, byId, localOpId) {
+  var l = byId[localOpId || conf.local.opId], r = conf.remote && conf.remote.opId ? byId[conf.remote.opId] : null;
+  if (!l || !r) return null;
+  var seen = amChain(r, byId, {});
+  var guard = 0, cur = l;
+  while (cur && guard++ < 5000) {
+    if (seen[cur.opId]) return (cur.type === 'del') ? null : (cur.data || null);
+    cur = cur.baseOpId ? byId[cur.baseOpId] : null;
+  }
+  return null;
+}
+function amMerge(base, a, b, aWins) {
+  if (amEq(a, b)) return a;
+  var baseObj = (base && typeof base === 'object' && !Array.isArray(base)) ? base : null;
+  if (a && b && typeof a === 'object' && typeof b === 'object' &&
+      !Array.isArray(a) && !Array.isArray(b)) {
+    var out = {}, keys = {}, k, i;
+    var sources = [baseObj || {}, a, b];
+    for (i = 0; i < sources.length; i++) {
+      for (k in sources[i]) {
+        if (Object.prototype.hasOwnProperty.call(sources[i], k)) keys[k] = 1;
+      }
+    }
+    for (k in keys) {
+      if (!Object.prototype.hasOwnProperty.call(keys, k)) continue;
+      var hasBase = !!(baseObj && Object.prototype.hasOwnProperty.call(baseObj, k));
+      var bk = hasBase ? baseObj[k] : undefined;
+      var aHas = Object.prototype.hasOwnProperty.call(a, k);
+      var bHas = Object.prototype.hasOwnProperty.call(b, k);
+      var ak = aHas ? a[k] : undefined;
+      var bv = bHas ? b[k] : undefined;
+      if (hasBase && amEq(ak, bk)) {
+        if (bHas) out[k] = bv;
+      } else if (hasBase && amEq(bv, bk)) {
+        if (aHas) out[k] = ak;
+      } else if (!hasBase && aHas && !bHas) {
+        out[k] = ak; // campo novo, so o lado a tem: adicao entra
+      } else if (!hasBase && bHas && !aHas) {
+        out[k] = bv; // campo novo, so o lado b tem: adicao entra
+      } else if (ak && bv && typeof ak === 'object' && typeof bv === 'object' &&
+                 Array.isArray(ak) === Array.isArray(bv)) {
+        out[k] = amMerge(bk, ak, bv, aWins);
+      } else if (aWins) {
+        if (aHas) out[k] = ak;
+      } else {
+        if (bHas) out[k] = bv;
+      }
+    }
+    return out;
+  }
+  if (Array.isArray(a) && Array.isArray(b)) {
+    var baseArr = Array.isArray(base) ? base : [];
+    var probe = a.concat(b, baseArr);
+    var hasIds = false, i3;
+    for (i3 = 0; i3 < probe.length; i3++) {
+      if (amIdOf(probe[i3]) !== null) { hasIds = true; break; }
+    }
+    if (hasIds) {
+      var mapOf = function (list) {
+        var m = {};
+        for (var j = 0; j < list.length; j++) {
+          var iid = amIdOf(list[j]);
+          if (iid !== null) m[iid] = list[j];
+        }
+        return m;
+      };
+      var ma = mapOf(a), mc = mapOf(b), mb = mapOf(baseArr);
+      var ids = {}, lists = [mb, ma, mc], j3, id3;
+      for (i3 = 0; i3 < lists.length; i3++) {
+        for (id3 in lists[i3]) {
+          if (Object.prototype.hasOwnProperty.call(lists[i3], id3)) ids[id3] = 1;
+        }
+      }
+      var arrOut = [], order = a.slice(), j4;
+      for (i3 = 0; i3 < b.length; i3++) {
+        var bid = amIdOf(b[i3]);
+        var found = false;
+        for (j4 = 0; j4 < order.length; j4++) {
+          if (amIdOf(order[j4]) === bid) { found = true; break; }
+        }
+        if (!found) order.push(b[i3]);
+      }
+      for (i3 = 0; i3 < order.length; i3++) {
+        var item = order[i3], id4 = amIdOf(item);
+        if (id4 === null) { arrOut.push(item); continue; }
+        var ia = Object.prototype.hasOwnProperty.call(ma, id4) ? ma[id4] : null;
+        var ib = Object.prototype.hasOwnProperty.call(mc, id4) ? mc[id4] : null;
+        var ibase = Object.prototype.hasOwnProperty.call(mb, id4) ? mb[id4] : null;
+        if (ia && ib) {
+          var mi = amMerge(ibase, ia, ib, aWins);
+          if (mi) arrOut.push(mi);
+        } else if (ia && !ib && ibase) {
+          // o lado b removeu o item: exclusao vence
+        } else if (ib && !ia && ibase) {
+          // o lado a removeu o item: exclusao vence
+        } else if (ia) {
+          arrOut.push(ia);
+        } else if (ib) {
+          arrOut.push(ib);
+        }
+      }
+      return arrOut;
+    }
+    if (amEq(a, base)) return b;
+    if (amEq(b, base)) return a;
+    return aWins ? a : b;
+  }
+  return aWins ? a : b;
+}
+function amBuildOp(conf) {
+  var mm = meta();
+  var byId = {}, i;
+  for (i = 0; i < model.ops.length; i++) byId[model.ops[i].opId] = model.ops[i];
+  var localSide = conf.local;
+  var cur = model.heads[conf.docId];
+  if (cur && cur.opId && cur.opId !== conf.local.opId && !cur.deleted) {
+    // A cabeca avancou desde o registro do conflito (outra ramificacao ja
+    // resolvida): mescla contra ela para nao descartar a terceira edicao.
+    localSide = { version: cur.version, opId: cur.opId, deviceId: cur.deviceId,
+                  deleted: false, data: cur.data };
+  }
+  var localOp = byId[localSide.opId];
+  var remoteOp = conf.remote && conf.remote.opId ? byId[conf.remote.opId] : null;
+  var lv = localSide.version || 0, rv = (conf.remote && conf.remote.version) || 0;
+  var aWins = (lv > rv) || (lv === rv && String(localSide.opId) > String(conf.remote.opId));
+  var localDel = !!localSide.deleted || (localOp && localOp.type === 'del');
+  var remoteDel = !!(conf.remote && conf.remote.type === 'del');
+  var base = amFindBase(conf, byId, localSide.opId);
+  if (!base && localOp && localOp.baseOpId && byId[localOp.baseOpId] &&
+      byId[localOp.baseOpId].type === 'put') base = byId[localOp.baseOpId].data || null;
+  if (!base && remoteOp && remoteOp.baseOpId && byId[remoteOp.baseOpId] &&
+      byId[remoteOp.baseOpId].type === 'put') base = byId[remoteOp.baseOpId].data || null;
+  var data, type;
+  if (localDel || remoteDel) { type = 'del'; data = null; }
+  else {
+    type = 'put';
+    data = amMerge(base, localSide.data, conf.remote.data, aWins);
+    if (!data || typeof data !== 'object') return null;
+  }
+  var baseVersion = Math.max(lv, rv);
+  var version = Math.max(mm.lamport || 0, baseVersion) + 1;
+  mm.lamport = version;
+  saveMeta(mm);
+  return {
+    opId: uuid(), deviceId: mm.deviceId, docId: conf.docId, type: type,
+    baseVersion: baseVersion, baseOpId: localSide.opId,
+    resolves: [conf.local.opId, conf.remote.opId],
+    version: version, data: data, createdAt: new Date().toISOString()
+  };
+}
+function autoResolve() {
+  var changed = false;
+  var guard = model.ops.length + 10;
+  while (model.conflicts.length && guard-- > 0) {
+    var conf = model.conflicts[0];
+    var op = amBuildOp(conf);
+    if (!op) break; // nao concluiu: fica para a tela manual (caso raro)
+    model.ops.push(op);
+    changed = true;
+    recompute(); // reconstrui cabecas; proximo conflito ja ve enxerga a nova
+  }
+  if (changed) {
+    materialize();
+    state.needsReload = true;
+    if (Date.now() <= bootUntil) {
+      // Mescla concluida ainda no arranque: recarrega logo para o app montar
+      // ja com o dado mesclado (sem esperar a janela de 30 s de inatividade).
+      setTimeout(function () {
+        try {
+          if (!state.backupBusy && !overlay &&
+              !document.getElementById('cc-conflict-overlay') &&
+              !document.getElementById('cc-terms-overlay')) location.reload();
+        } catch (e) {}
+      }, 1200);
+    }
+  }
+}
+/* cc-automerge-e */
   // ---------------------------------------------------------------- modelo --
   var model = { ops: [], heads: {}, conflicts: [] };
   var m0 = meta();
@@ -327,6 +543,10 @@
       addConflict(op.docId, h, op);
     });
     persistModel();
+    if (!recompute.__ccAuto) {
+      recompute.__ccAuto = 1;
+      try { autoResolve(); } finally { recompute.__ccAuto = 0; }
+    }
   }
 
   function applyRemoteOps(remoteOps) {
@@ -901,8 +1121,8 @@
       }
       if (model.conflicts.length) {
         cloud += '<br><b>Atenção:</b> ' + model.conflicts.length +
-          ' conflito(s) de edição. As duas versões ficam guardadas na nuvem; ' +
-          'novas edições dessas fichas ficam pausadas até você decidir.';
+          ' conflito(s) que a mesclagem autom\u00e1tica n\u00e3o conseguiu concluir; ' +
+          'use "Resolver conflitos" para escolher manualmente.';
       }
       if (state.generationBlocked) {
         cloud += '<br><b>Atenção:</b> a nuvem foi reiniciada em outro aparelho. ' +
@@ -1004,7 +1224,7 @@
     if (model.conflicts.length && !preserve && !force) {
       if (auto) preserve = true;
       else {
-        alert('Há conflitos de edição pendentes. Resolva-os antes de enviar.');
+        alert('H\u00e1 conflitos que a mesclagem autom\u00e1tica n\u00e3o concluiu. Abra "Resolver conflitos" antes de enviar.');
         return Promise.resolve();
       }
     }
@@ -1293,8 +1513,8 @@
     }).join('');
     ov.innerHTML = '<div id="cc-conflict-modal" role="dialog" aria-label="Conflitos de edição">' +
       '<h2>Conflitos de edição</h2>' +
-      '<p class="cc-conflict-hint">As duas versões foram preservadas. Escolha uma por ficha. ' +
-      'O histórico continua guardado para auditoria.</p>' + cards +
+      '<p class="cc-conflict-hint">Caso raro: a mesclagem autom\u00e1tica n\u00e3o concluiu. ' +
+      'Escolha uma vers\u00e3o por ficha; o hist\u00f3rico continua guardado para auditoria.</p>' + cards +
       '<button class="close" id="cc-conflict-close">Fechar e decidir depois</button></div>';
     document.body.appendChild(ov);
     ov.addEventListener('click', function (e) { if (e.target === ov) closeConflicts(); });
@@ -1363,7 +1583,7 @@
         (hasHost
           ? '<div class="hint">O Caderno sincroniza sozinho (a cada 15 s). ' +
             '<b>Verificar agora</b> serve só para conferir na hora. ' +
-            'Conflitos de edição nunca são resolvidos sozinhos.</div>'
+            'Edi\u00e7\u00f5es de aparelhos diferentes s\u00e3o mescladas sozinhas.</div>'
           : '<div class="hint">Login Google disponível somente no app instalado. Neste modo, use Exportar/Importar.</div>') +
         '<div class="row" style="margin-top:14px"><button class="action danger" id="cc-m-reset">Iniciar novo caderno</button></div>' +
         '<button class="close" id="cc-m-close">Fechar</button>' +
